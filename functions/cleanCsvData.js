@@ -1,4 +1,4 @@
-const { convertTimeTo24Hour } = require("./convertTimeTo24Hour");
+const { convertTimeTo24Hour } = require('./convertTimeTo24Hour');
 /**
  * Cleans the CSV data row by row as it's parsed in a stream.
  * The first 3 rows are ignored, and headers are modified once the 4th row is reached.
@@ -38,15 +38,16 @@ function cleanCsvData(row, cleanedData, state, baseDate) {
     //   }
     //   return header;
     // });
+    // console.log(row);
 
     // // Store cleaned headers in state
     state.cleanedHeaders = cleanedHeaders;
     cleanedData.push(cleanedHeaders);
   }
   // Handle subsequent data rows
-  else {
-    cleanedData.push(row);
-  }
+  // else {
+  cleanedData.push(row);
+  // }
 }
 
 module.exports = cleanCsvData;

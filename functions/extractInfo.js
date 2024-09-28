@@ -1,4 +1,4 @@
-const path = require("path");
+const path = require('path');
 
 /**
  * Extracts the section name and date from the given filename.
@@ -7,7 +7,7 @@ const path = require("path");
  */
 function extractInfoFromFilename(filename) {
   // Extract section name (everything before the first '-')
-  const sectionName = filename.split("-")[0];
+  const sectionName = filename.split('-')[0];
 
   // Extract date from the filename
   const dateRegex = /(\d{1,2})%20([A-Za-z]+)%20(\d{4})/; // Matches the date format
@@ -20,7 +20,7 @@ function extractInfoFromFilename(filename) {
     date = new Date(`${month} ${day}, ${year}`);
     // Adjust to the day before at 5:00 AM
     date.setDate(date.getDate() - 1);
-    date.setHours(5, 0, 0);
+    date.setHours(3, 0, 0);
   }
   return { sectionName, date };
 }

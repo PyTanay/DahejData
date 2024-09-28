@@ -1,5 +1,5 @@
-const sql = require("mssql");
-const { v4: uuidv4 } = require("uuid");
+const sql = require('mssql');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Inserts or updates entries in the TagDetails table.
@@ -19,51 +19,63 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName) {
       const uniqID = uuidv4();
       const request = new sql.Request(dbConnection);
       // console.log(tagDetails[i]);
+      try {
+        // First, check if an entry with the same Tag Name, Description, Engg Units, Alarm Value, and SectionName exists
+        const selectQuery = `
+                  SELECT TagKey FROM TagDetails
+                  WHERE TagName = @tagName
+                    AND SrNo = @srNo
+                    AND Description = @description
+                    AND EnggUnits = @enggUnits
+                    AND AlarmValue = @alarmValue
+                    AND SectionName = @sectionName`;
 
-      // First, check if an entry with the same Tag Name, Description, Engg Units, Alarm Value, and SectionName exists
-      const selectQuery = `
-                SELECT TagKey FROM TagDetails
-                WHERE TagName = @tagName
-                  AND Description = @description
-                  AND EnggUnits = @enggUnits
-                  AND AlarmValue = @alarmValue
-                  AND SectionName = @sectionName`;
+        request.input('tagName', sql.NVarChar, tagDetails[i]['Tag Name']);
+        request.input('srNo', sql.NVarChar, tagDetails[i]['Sr No']);
+        request.input('description', sql.NVarChar, tagDetails[i].Description);
+        request.input('enggUnits', sql.NVarChar, tagDetails[i]['Engg Units']);
+        request.input('alarmValue', sql.Float, Number(tagDetails[i]['Alarm\nValue']));
+        request.input('sectionName', sql.NVarChar, sectionName);
 
-      request.input("tagName", sql.NVarChar, tagDetails[i]["Tag Name"]);
-      request.input("description", sql.NVarChar, tagDetails[i].Description);
-      request.input("enggUnits", sql.NVarChar, tagDetails[i]["Engg Units"]);
-      request.input("alarmValue", sql.Float, Number(tagDetails[i]["Alarm\nValue"]));
-      request.input("sectionName", sql.NVarChar, sectionName);
+        const result = await request.query(selectQuery);
 
-      const result = await request.query(selectQuery);
+        if (result.recordset.length > 0) {
+          // If entry exists, return the existing TagKey
+          // console.log(`TagKey found for ${tagDetails[i]['Tag Name']}:`, tagDetails[i]['Tag Name'], tagDetails[i].Description);
+          tagKeyList[tagDetails[i]['Sr No'] + tagDetails[i]['Tag Name']] = result.recordset[0].TagKey;
+        } else {
+          // If entry does not exist, insert a new entry
+          const insertRequest = new sql.Request(dbConnection);
+          const insertQuery = `
+                      INSERT INTO TagDetails (TagKey,SrNo, TagName, Description, EnggUnits, AlarmValue, SectionName)
+                      OUTPUT inserted.TagKey
+                      VALUES (@tagKey, @srNo , @tagName, @description, @enggUnits, @alarmValue, @sectionName)`;
 
-      if (result.recordset.length > 0) {
-        // If entry exists, return the existing TagKey
-        console.log(`TagKey found for ${tagDetails[i]["Tag Name"]}:`, tagDetails[i]["Tag Name"], tagDetails[i].Description);
-        tagKeyList[tagDetails[i]["Tag Name"]] = result.recordset[0].TagKey;
-      } else {
-        // If entry does not exist, insert a new entry
-        const insertRequest = new sql.Request(dbConnection);
-        const insertQuery = `
-                    INSERT INTO TagDetails (TagKey, TagName, Description, EnggUnits, AlarmValue, SectionName)
-                    OUTPUT inserted.TagKey
-                    VALUES (@tagKey, @tagName, @description, @enggUnits, @alarmValue, @sectionName)`;
+          insertRequest.input('tagKey', sql.NVarChar(36), uniqID);
+          insertRequest.input('tagName', sql.NVarChar, tagDetails[i]['Tag Name']);
+          insertRequest.input('srNo', sql.NVarChar, tagDetails[i]['Sr No']);
+          insertRequest.input('description', sql.NVarChar, tagDetails[i].Description);
+          insertRequest.input('enggUnits', sql.NVarChar, tagDetails[i]['Engg Units']);
+          insertRequest.input('alarmValue', sql.Float, Number(tagDetails[i]['Alarm\nValue']));
+          insertRequest.input('sectionName', sql.NVarChar, sectionName);
 
-        insertRequest.input("tagKey", sql.NVarChar(36), uniqID);
-        insertRequest.input("tagName", sql.NVarChar, tagDetails[i]["Tag Name"]);
-        insertRequest.input("description", sql.NVarChar, tagDetails[i].Description);
-        insertRequest.input("enggUnits", sql.NVarChar, tagDetails[i]["Engg Units"]);
-        insertRequest.input("alarmValue", sql.Float, Number(tagDetails[i]["Alarm\nValue"]));
-        insertRequest.input("sectionName", sql.NVarChar, sectionName);
+          const insertResult = await insertRequest.query(insertQuery);
 
-        const insertResult = await insertRequest.query(insertQuery);
-
-        console.log(`New TagKey inserted for ${tagDetails[i]["Tag Name"]}:`, tagDetails[i]["Tag Name"], tagDetails[i].Description);
-        tagKeyList[tagDetails[i]["Tag Name"]] = insertResult.recordset[0].TagKey;
+          // console.log(
+          //     `New TagKey inserted for ${tagDetails[i]['Tag Name']}:`,
+          //     tagDetails[i]['Tag Name'],
+          //     tagDetails[i].Description
+          // );
+          tagKeyList[tagDetails[i]['Sr No'] + tagDetails[i]['Tag Name']] = insertResult.recordset[0].TagKey;
+        }
+      } catch (err) {
+        if (err.Number === 2627) {
+          return false;
+        }
       }
     }
   } catch (error) {
-    console.error("Error in pushDataToSecondaryTable:", error);
+    console.error('Error in pushDataToSecondaryTable:', error);
     throw error;
   }
 

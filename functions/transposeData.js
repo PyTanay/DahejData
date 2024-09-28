@@ -7,7 +7,6 @@
 function transposeData(cleanedData, cleanedHeaders) {
   // console.log(cleanedHeaders);
   const transposedData = [];
-
   cleanedData.forEach((item, index) => {
     // Loop through each hourly column
     // console.log(item);
@@ -18,9 +17,11 @@ function transposeData(cleanedData, cleanedHeaders) {
       const value = item[key];
       // console.log(key);
       // Create a new object for each hour's data
+      // console.log(item);
       if (value !== undefined) {
         transposedData.push({
-          TagName: item["Tag Name"],
+          SrNo: item['Sr No'],
+          TagName: item['Tag Name'],
           DateTime: key, // Set hours for 5 AM to 11 PM
           Value: parseFloat(value), // Convert value to decimal
           SectionName: item.sectionName,

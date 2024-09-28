@@ -1,6 +1,8 @@
-const fs = require("fs");
-const path = require("path");
-const csvParser = require("csv-parser");
+const fs = require('fs');
+const path = require('path');
+const csvParser = require('csv-parser');
+const cliProgress = require('cli-progress');
+const pLimit = require('p-limit');
 const {
   cleanCsvData,
   transposeData,
@@ -10,8 +12,9 @@ const {
   pushDataToPrimaryTable,
   pushDataToSecondaryTable,
   pushDataToFileTracking,
-} = require("./functions");
-const { format } = require("util");
+  fileProcessed,
+} = require('./functions');
+const { format } = require('util');
 
 // Main function to read and process the CSV file
 async function processCsvFile(filePath) {
@@ -37,39 +40,25 @@ async function processCsvFile(filePath) {
         mapHeaders: ({ header, index }) => {
           if (index > 9) {
             // Skip first 10 static columns
-            const timeRange = header.trim().split("\n-\n")[0]; // Extract the time range
+            const timeRange = header.trim().split('\n-\n')[0]; // Extract the time range
             const timeIn24Hr = convertTimeTo24Hour(timeRange);
 
-            // Clone baseDate to avoid mutation and add the current hour
-            // console.log(baseDate, baseDate.getTime());
             var newDate = new Date(baseDate.getTime());
-            if (timeIn24Hr < 5) {
-              newDate = new Date(newDate.getTime() + 24 * 60 * 60 * 1000);
-            }
-            newDate.setHours(timeIn24Hr);
-            // Convert the new date to the desired format
-            const options = {
-              year: "numeric",
-              month: "2-digit",
-              day: "2-digit",
-              hour: "2-digit",
-              minute: "2-digit",
-              hour12: true,
-              timeZone: "Asia/Kolkata", // Replace with your timezone
-            };
 
-            // Convert the date to your specified timezone
-            return newDate.toLocaleString("en-GB", options).replace(",", "").replace(/\//g, "-");
+            newDate = newDate.getTime() + (index - 9) * 60 * 60 * 1000; // Set the hour to 4 AM
+            newDate = new Date(newDate);
+
+            return newDate;
           }
           return header;
         },
       })
     )
-    .on("data", (row) => {
+    .on('data', (row) => {
       cleanCsvData(row, cleanedData, state, baseDate);
     })
-    .on("end", async () => {
-      console.log("CSV file successfully processed.");
+    .on('end', async () => {
+      console.log('CSV file successfully processed.');
 
       // Transpose the cleaned data
       const transposedData = transposeData(cleanedData, state.cleanedHeaders);
@@ -78,24 +67,85 @@ async function processCsvFile(filePath) {
       const dbConnection = await connectToDatabase();
 
       try {
+        // Check if file has been already inserted into the database
+        // Log this file in the FileTracking table
+        await pushDataToFileTracking(dbConnection, filename);
+
         // Check for duplicates in the secondary table and insert new entries if necessary
         const tagKey = await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName);
 
         // Insert the cleaned and transposed data into the primary table
         await pushDataToPrimaryTable(dbConnection, tagKey, transposedData);
 
-        // Log this file in the FileTracking table
-        await pushDataToFileTracking(dbConnection, filename);
-
-        console.log("Data pushed to database and file tracking updated.");
+        // console.log('Data pushed to database and file tracking updated.');
+        await fileProcessed(dbConnection, filename);
       } catch (error) {
-        console.error("Error while pushing data:", error);
+        if (error.message !== 'exists') {
+          console.error('Error while pushing data:', error);
+          throw error;
+        } else {
+          console.error('File already inserted!');
+        }
       } finally {
         dbConnection.close();
       }
     });
+  return Promise.resolve(`Processed ${filePath}`);
 }
 
 // Call the main function with your file path
-const filePath = "./data/TDI-C201_Daily_Average_2_new%20(19%20Aug%202021_08%2025%2028)%20.csv";
-processCsvFile(filePath);
+const filePath = 'E:/hourly-log/esrvtdidhj/TDI-C201_Daily_Average_2_new%20(19%20Aug%202021_08%2025%2028)%20.csv';
+// processCsvFile(filePath);
+const b1 = new cliProgress.SingleBar({
+  format:
+    'File checking progress || {bar} || {percentage}% || {value}/{total} Files || ETA : {eta_formatted} || Time elapsed : {duration_formatted}',
+  barCompleteChar: '\u2588',
+  barIncompleteChar: '\u2591',
+  hideCursor: true,
+});
+
+async function processMultipleCsvFiles(directoryPath) {
+  // Read the directory and filter for CSV files
+  const files = fs.readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
+  let total = 10,
+    current = 0;
+  // total=files.length;
+  total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
+  // Map over the files and process each one concurrently
+  const processingPromises = files.map(async (file) => {
+    const filePath = path.join(directoryPath, file);
+    if (current >= total) {
+      return false;
+    }
+    const limit = pLimit(5);
+    return limit(async () => {
+      await dummyFunction(3000);
+      // await processCsvFile(filePath);
+      if (current <= total) {
+        b1.update(current);
+        current++;
+      } else {
+        b1.stop();
+      }
+    });
+  });
+
+  // Wait for all processing to complete
+  try {
+    const results = await Promise.all(processingPromises);
+    console.log('All files processed:');
+  } catch (error) {
+    console.error('Error processing files:', error);
+  }
+}
+
+const directoryPath = 'E:/hourly-log/esrvtdidhj'; // Change this to your CSV directory
+processMultipleCsvFiles(directoryPath);
+
+function dummyFunction(duration) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve(`Executed after ${duration} ms`);
+    }, duration);
+  });
+}
