@@ -9,6 +9,7 @@ import pushDataToFileTracking from './pushDataToFileTracking.js';
 import fileProcessed from './fileProcessed.js';
 import b1 from './cliProgressBar.js';
 import tagNameCorrector from './tagNameCorrector.js';
+import waitForTagKeyList from './waitForTagKeyList.js';
 const { convertTimeTo24Hour, parseCustomDateTime, convertDateFormat } = pkg1;
 export default {
     cleanCsvData,
@@ -24,4 +25,5 @@ export default {
     fileProcessed,
     b1,
     tagNameCorrector,
+    waitForTagKeyList,
 };

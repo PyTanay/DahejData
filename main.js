@@ -77,7 +77,7 @@ async function processCsvFile(filePath, dbConnection) {
 
                     // Check for duplicates in the secondary table and insert new entries if necessary
                     await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName, tagKeyList);
-
+                    const tagKeys2 = await waitForTagKeyList();
                     // Insert the cleaned and transposed data into the primary table
                     await pushDataToPrimaryTable(dbConnection, tagKeyList, transposedData);
 

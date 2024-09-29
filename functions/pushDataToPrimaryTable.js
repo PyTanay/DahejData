@@ -20,13 +20,16 @@ async function pushDataToPrimaryTable(dbConnection, tagKey, data) {
             try {
                 const { DateTime, Value, TagName, SrNo, Description } = entry;
                 const request = new Request(dbConnection);
+                // console.log(tagKey);
                 const insertQuery = `
                   INSERT INTO hourlyData (TagKey, DateTime, Value, Processed)
                   VALUES (@tagKey, @dateTime, @value, 0)`;
 
                 if (tagKey[SrNo + TagName + Description] == null) {
-                    // console.log(tagKey[SrNo + TagName + Description], SrNo, TagName);
-                    continue;
+                    console.log(tagKey);
+                    console.log(tagKey[SrNo + TagName + Description], SrNo, TagName);
+                    throw Error();
+                    // continue;
                 }
                 request.input('tagKey', NVarChar(36), tagKey[SrNo + TagName + Description]);
                 request.input('dateTime', _DateTime, DateTime);
