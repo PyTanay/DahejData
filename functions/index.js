@@ -8,6 +8,7 @@ import pushDataToSecondaryTable from './pushDataToSecondaryTable.js';
 import pushDataToFileTracking from './pushDataToFileTracking.js';
 import fileProcessed from './fileProcessed.js';
 import b1 from './cliProgressBar.js';
+import tagNameCorrector from './tagNameCorrector.js';
 const { convertTimeTo24Hour, parseCustomDateTime, convertDateFormat } = pkg1;
 export default {
     cleanCsvData,
@@ -22,4 +23,5 @@ export default {
     pushDataToFileTracking,
     fileProcessed,
     b1,
+    tagNameCorrector,
 };

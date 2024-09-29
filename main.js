@@ -4,6 +4,7 @@ import csvParser from 'csv-parser';
 import dotenv from 'dotenv';
 import pLimit from 'p-limit';
 import allFunctions from './functions/index.js';
+
 const {
     cleanCsvData,
     transposeData,
@@ -15,11 +16,15 @@ const {
     pushDataToFileTracking,
     fileProcessed,
     b1,
+    tagNameCorrector,
 } = allFunctions;
 dotenv.config();
 
+// This is central tagKeyList store and is kept here so that all concurrent instances can use the store
+const tagKeyList = {};
+
 // Main function to read and process the CSV file
-async function processCsvFile(filePath) {
+async function processCsvFile(filePath, dbConnection) {
     const filename = basename(filePath);
 
     // Extract date and section name from the filename
@@ -31,11 +36,10 @@ async function processCsvFile(filePath) {
         cleanedHeaders: null,
     };
 
-    // Store the cleaned CSVdata
-    const cleanedData = [];
-
     // Create a read stream and pipe it through the CSV parser
     return new Promise((resolve, reject) => {
+        // Store the cleaned CSVdata
+        const cleanedData = [];
         createReadStream(filePath)
             .pipe(
                 csvParser({
@@ -61,11 +65,10 @@ async function processCsvFile(filePath) {
                 cleanCsvData(row, cleanedData, state, baseDate);
             })
             .on('end', async () => {
+                tagNameCorrector(cleanedData);
                 // Transpose the cleaned data
-                const transposedData = transposeData(cleanedData, state.cleanedHeaders);
 
-                // Connect to the database
-                const dbConnection = await connectToDatabase();
+                const transposedData = transposeData(cleanedData, state.cleanedHeaders);
 
                 try {
                     // Check if file has been already inserted into the database
@@ -73,10 +76,10 @@ async function processCsvFile(filePath) {
                     await pushDataToFileTracking(dbConnection, filename);
 
                     // Check for duplicates in the secondary table and insert new entries if necessary
-                    const tagKey = await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName);
+                    await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName, tagKeyList);
 
                     // Insert the cleaned and transposed data into the primary table
-                    await pushDataToPrimaryTable(dbConnection, tagKey, transposedData);
+                    await pushDataToPrimaryTable(dbConnection, tagKeyList, transposedData);
 
                     // console.log('Data pushed to database and file tracking updated.');
                     await fileProcessed(dbConnection, filename);
@@ -88,7 +91,7 @@ async function processCsvFile(filePath) {
                         throw error;
                     }
                 } finally {
-                    dbConnection.close();
+                    // dbConnection.close();
                 }
                 resolve(`Processed ${filePath}`);
             })
@@ -108,7 +111,11 @@ async function processMultipleCsvFiles(directoryPath) {
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
     let total = files.length,
         current = 0;
-    // total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
+    total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
+
+    // Connect to the database
+    const dbConnection = await connectToDatabase();
+
     // Map over the files and process each one concurrently
     let errorOccurred = false; // Flag to track if an error has occurred
     const processingPromises = files.map((file) => {
@@ -117,14 +124,14 @@ async function processMultipleCsvFiles(directoryPath) {
         return limit(async () => {
             if (errorOccurred || current >= total) return; // Stop if an error occurred
             try {
-                await processCsvFile(filePath);
+                await processCsvFile(filePath, dbConnection);
                 // await dummyFunction(500);
                 // if (current === 3) throw new Error(`This is error generated in file number ${current + 1}!`);
                 current++;
-                // b1.update(current);
+                b1.update(current);
             } catch (err) {
                 errorOccurred = true; // Set flag if an error occurs
-                // b1.stop();
+                b1.stop();
                 throw err;
             }
             if (current === total) b1.stop();
@@ -134,8 +141,10 @@ async function processMultipleCsvFiles(directoryPath) {
     // Wait for all processing to complete
     try {
         const results = await Promise.all(processingPromises);
+        await dbConnection.close();
         console.log('All files processed:');
     } catch (error) {
+        await dbConnection.close();
         console.error(error.message);
     }
 }

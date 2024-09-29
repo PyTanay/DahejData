@@ -15,6 +15,7 @@ function transposeData(cleanedData, cleanedHeaders) {
                     SrNo: item['Sr No'],
                     TagName: item['Tag Name'],
                     DateTime: key,
+                    Description: item['Description'],
                     Value: parseFloat(value) < 10000000000000n ? parseFloat(value) : 0, // Convert value to decimal
                 });
             }
