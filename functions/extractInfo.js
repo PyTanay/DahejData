@@ -1,4 +1,4 @@
-const path = require('path');
+import path from 'path';
 
 /**
  * Extracts the section name and date from the given filename.
@@ -25,4 +25,4 @@ function extractInfoFromFilename(filename) {
   return { sectionName, date };
 }
 
-module.exports = extractInfoFromFilename;
+export default extractInfoFromFilename;

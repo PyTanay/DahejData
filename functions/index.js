@@ -1,21 +1,25 @@
-const cleanCsvData = require('./cleanCsvData.js');
-const transposeData = require('./transposeData');
-const extractInfoFromFilename = require('./extractInfo');
-const { convertTimeTo24Hour } = require('./convertTimeTo24Hour');
-const connectToDatabase = require('./connectToDatabase');
-const pushDataToPrimaryTable = require('./pushDataToPrimaryTable');
-const pushDataToSecondaryTable = require('./pushDataToSecondaryTable');
-const pushDataToFileTracking = require('./pushDataToFileTracking');
-const fileProcessed = require('./fileProcessed');
-
-module.exports = {
-  cleanCsvData,
-  transposeData,
-  extractInfoFromFilename,
-  convertTimeTo24Hour,
-  connectToDatabase,
-  pushDataToPrimaryTable,
-  pushDataToSecondaryTable,
-  pushDataToFileTracking,
-  fileProcessed,
+import cleanCsvData from './cleanCsvData.js';
+import transposeData from './transposeData.js';
+import extractInfoFromFilename from './extractInfo.js';
+import pkg1 from './convertTimeTo24Hour.js';
+import connectToDatabase from './connectToDatabase.js';
+import pushDataToPrimaryTable from './pushDataToPrimaryTable.js';
+import pushDataToSecondaryTable from './pushDataToSecondaryTable.js';
+import pushDataToFileTracking from './pushDataToFileTracking.js';
+import fileProcessed from './fileProcessed.js';
+import b1 from './cliProgressBar.js';
+const { convertTimeTo24Hour, parseCustomDateTime, convertDateFormat } = pkg1;
+export default {
+    cleanCsvData,
+    transposeData,
+    extractInfoFromFilename,
+    convertTimeTo24Hour,
+    parseCustomDateTime,
+    convertDateFormat,
+    connectToDatabase,
+    pushDataToPrimaryTable,
+    pushDataToSecondaryTable,
+    pushDataToFileTracking,
+    fileProcessed,
+    b1,
 };

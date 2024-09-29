@@ -1,151 +1,152 @@
-const fs = require('fs');
-const path = require('path');
-const csvParser = require('csv-parser');
-const cliProgress = require('cli-progress');
-const pLimit = require('p-limit');
+import { createReadStream, readdirSync } from 'fs';
+import { basename, join } from 'path';
+import csvParser from 'csv-parser';
+import dotenv from 'dotenv';
+import pLimit from 'p-limit';
+import allFunctions from './functions/index.js';
 const {
-  cleanCsvData,
-  transposeData,
-  extractInfoFromFilename,
-  convertTimeTo24Hour,
-  connectToDatabase,
-  pushDataToPrimaryTable,
-  pushDataToSecondaryTable,
-  pushDataToFileTracking,
-  fileProcessed,
-} = require('./functions');
-const { format } = require('util');
+    cleanCsvData,
+    transposeData,
+    extractInfoFromFilename,
+    convertTimeTo24Hour,
+    connectToDatabase,
+    pushDataToPrimaryTable,
+    pushDataToSecondaryTable,
+    pushDataToFileTracking,
+    fileProcessed,
+    b1,
+} = allFunctions;
+dotenv.config();
 
 // Main function to read and process the CSV file
 async function processCsvFile(filePath) {
-  const filename = path.basename(filePath);
+    const filename = basename(filePath);
 
-  // Extract date and section name from the filename
-  const { sectionName, date: baseDate } = extractInfoFromFilename(filename);
+    // Extract date and section name from the filename
+    const { sectionName, date: baseDate } = extractInfoFromFilename(filename);
 
-  // Track data state
-  const state = {
-    rowCount: 0,
-    cleanedHeaders: null,
-  };
+    // Track data state
+    const state = {
+        rowCount: 0,
+        cleanedHeaders: null,
+    };
 
-  // Store the cleaned CSV data
-  const cleanedData = [];
+    // Store the cleaned CSVdata
+    const cleanedData = [];
 
-  // Create a read stream and pipe it through the CSV parser
-  fs.createReadStream(filePath)
-    .pipe(
-      csvParser({
-        skipLines: 3,
-        mapHeaders: ({ header, index }) => {
-          if (index > 9) {
-            // Skip first 10 static columns
-            const timeRange = header.trim().split('\n-\n')[0]; // Extract the time range
-            const timeIn24Hr = convertTimeTo24Hour(timeRange);
+    // Create a read stream and pipe it through the CSV parser
+    return new Promise((resolve, reject) => {
+        createReadStream(filePath)
+            .pipe(
+                csvParser({
+                    skipLines: 3,
+                    mapHeaders: ({ header, index }) => {
+                        if (index > 9) {
+                            // Skip first 10 static columns
+                            const timeRange = header.trim().split('\n-\n')[0]; // Extract the time range
+                            const timeIn24Hr = convertTimeTo24Hour(timeRange);
 
-            var newDate = new Date(baseDate.getTime());
+                            var newDate = new Date(baseDate.getTime());
 
-            newDate = newDate.getTime() + (index - 9) * 60 * 60 * 1000; // Set the hour to 4 AM
-            newDate = new Date(newDate);
+                            newDate = newDate.getTime() + (index - 9) * 60 * 60 * 1000; // Set the hour to 4 AM
+                            newDate = new Date(newDate);
 
-            return newDate;
-          }
-          return header;
-        },
-      })
-    )
-    .on('data', (row) => {
-      cleanCsvData(row, cleanedData, state, baseDate);
-    })
-    .on('end', async () => {
-      console.log('CSV file successfully processed.');
+                            return newDate;
+                        }
+                        return header;
+                    },
+                })
+            )
+            .on('data', (row) => {
+                cleanCsvData(row, cleanedData, state, baseDate);
+            })
+            .on('end', async () => {
+                // Transpose the cleaned data
+                const transposedData = transposeData(cleanedData, state.cleanedHeaders);
 
-      // Transpose the cleaned data
-      const transposedData = transposeData(cleanedData, state.cleanedHeaders);
+                // Connect to the database
+                const dbConnection = await connectToDatabase();
 
-      // Connect to the database
-      const dbConnection = await connectToDatabase();
+                try {
+                    // Check if file has been already inserted into the database
+                    // Log this file in the FileTracking table
+                    await pushDataToFileTracking(dbConnection, filename);
 
-      try {
-        // Check if file has been already inserted into the database
-        // Log this file in the FileTracking table
-        await pushDataToFileTracking(dbConnection, filename);
+                    // Check for duplicates in the secondary table and insert new entries if necessary
+                    const tagKey = await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName);
 
-        // Check for duplicates in the secondary table and insert new entries if necessary
-        const tagKey = await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName);
+                    // Insert the cleaned and transposed data into the primary table
+                    await pushDataToPrimaryTable(dbConnection, tagKey, transposedData);
 
-        // Insert the cleaned and transposed data into the primary table
-        await pushDataToPrimaryTable(dbConnection, tagKey, transposedData);
-
-        // console.log('Data pushed to database and file tracking updated.');
-        await fileProcessed(dbConnection, filename);
-      } catch (error) {
-        if (error.message !== 'exists') {
-          console.error('Error while pushing data:', error);
-          throw error;
-        } else {
-          console.error('File already inserted!');
-        }
-      } finally {
-        dbConnection.close();
-      }
+                    // console.log('Data pushed to database and file tracking updated.');
+                    await fileProcessed(dbConnection, filename);
+                } catch (error) {
+                    if (error.message === 'exists') {
+                        // console.error('File already inserted!');
+                    } else {
+                        console.error('Error while pushing data:', error);
+                        throw error;
+                    }
+                } finally {
+                    dbConnection.close();
+                }
+                resolve(`Processed ${filePath}`);
+            })
+            .on('error', (error) => {
+                reject(error);
+            });
     });
-  return Promise.resolve(`Processed ${filePath}`);
 }
 
 // Call the main function with your file path
-const filePath = 'E:/hourly-log/esrvtdidhj/TDI-C201_Daily_Average_2_new%20(19%20Aug%202021_08%2025%2028)%20.csv';
+// const filePath = 'E:/hourly-log/esrvtdidhj/TDI-C201_Daily_Average_2_new%20(19%20Aug%202021_08%2025%2028)%20.csv';
 // processCsvFile(filePath);
-const b1 = new cliProgress.SingleBar({
-  format:
-    'File checking progress || {bar} || {percentage}% || {value}/{total} Files || ETA : {eta_formatted} || Time elapsed : {duration_formatted}',
-  barCompleteChar: '\u2588',
-  barIncompleteChar: '\u2591',
-  hideCursor: true,
-});
 
 async function processMultipleCsvFiles(directoryPath) {
-  // Read the directory and filter for CSV files
-  const files = fs.readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
-  let total = 10,
-    current = 0;
-  // total=files.length;
-  total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
-  // Map over the files and process each one concurrently
-  const processingPromises = files.map(async (file) => {
-    const filePath = path.join(directoryPath, file);
-    if (current >= total) {
-      return false;
-    }
-    const limit = pLimit(5);
-    return limit(async () => {
-      await dummyFunction(3000);
-      // await processCsvFile(filePath);
-      if (current <= total) {
-        b1.update(current);
-        current++;
-      } else {
-        b1.stop();
-      }
+    // Read the directory and filter for CSV files
+    const files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
+    const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
+    let total = files.length,
+        current = 0;
+    // total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
+    // Map over the files and process each one concurrently
+    let errorOccurred = false; // Flag to track if an error has occurred
+    const processingPromises = files.map((file) => {
+        const filePath = join(directoryPath, file);
+        if (current >= total) return false;
+        return limit(async () => {
+            if (errorOccurred || current >= total) return; // Stop if an error occurred
+            try {
+                await processCsvFile(filePath);
+                // await dummyFunction(500);
+                // if (current === 3) throw new Error(`This is error generated in file number ${current + 1}!`);
+                current++;
+                // b1.update(current);
+            } catch (err) {
+                errorOccurred = true; // Set flag if an error occurs
+                // b1.stop();
+                throw err;
+            }
+            if (current === total) b1.stop();
+        });
     });
-  });
 
-  // Wait for all processing to complete
-  try {
-    const results = await Promise.all(processingPromises);
-    console.log('All files processed:');
-  } catch (error) {
-    console.error('Error processing files:', error);
-  }
+    // Wait for all processing to complete
+    try {
+        const results = await Promise.all(processingPromises);
+        console.log('All files processed:');
+    } catch (error) {
+        console.error(error.message);
+    }
 }
 
-const directoryPath = 'E:/hourly-log/esrvtdidhj'; // Change this to your CSV directory
+const directoryPath = './data'; // Change this to your CSV directory
 processMultipleCsvFiles(directoryPath);
 
 function dummyFunction(duration) {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(`Executed after ${duration} ms`);
-    }, duration);
-  });
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve(`Executed after ${duration} ms`);
+        }, duration);
+    });
 }

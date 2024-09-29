@@ -1,4 +1,5 @@
-const sql = require('mssql');
+import pkg from 'mssql';
+const { Request, NVarChar } = pkg;
 
 /**
  * Inserts an entry into the FileTracking table to track processed files.
@@ -7,36 +8,38 @@ const sql = require('mssql');
  * @returns {Promise<void>}
  */
 async function pushDataToFileTracking(dbConnection, fileName) {
-  try {
-    const request = new sql.Request(dbConnection);
+    try {
+        const request = new Request(dbConnection);
 
-    // Assuming your FileTracking table has columns for FileName and DateProcessed
-    const query = `IF EXISTS (SELECT 1 FROM FileTracking WHERE FileName = @fileName)
-    SELECT Processed FROM FileTracking WHERE FileName = @fileName;
-ELSE
-BEGIN
-    INSERT INTO FileTracking (FileName) VALUES (@fileName);
-    SELECT 0 AS Processed; -- Assuming default value for 'Processed' is 0 on insertion
-END`;
+        // Assuming your FileTracking table has columns for FileName and DateProcessed
+        const query = `IF EXISTS (SELECT 1 FROM FileTracking WHERE FileName = @fileName)
+                            SELECT Processed FROM FileTracking WHERE FileName = @fileName;
+                        ELSE
+                        BEGIN
+                            INSERT INTO FileTracking (FileName) VALUES (@fileName);
+                            SELECT 0 AS Processed; -- Assuming default value for 'Processed' is 0 on insertion
+                        END`;
 
-    // Set up the input parameter for the file name
-    request.input('fileName', sql.NVarChar, fileName);
+        // Set up the input parameter for the file name
+        request.input('fileName', NVarChar, fileName);
 
-    // Execute the query
-    const status = await request.query(query);
-    if (status.recordset[0].Processed === false) {
-      throw new Error('exists');
+        // Execute the query
+        const status = await request.query(query);
+        // console.log(typeof status.recordset[0].Processed);
+        if (status.recordset[0].Processed === true) {
+            console.log(`File ${fileName} Status Log: Already Inserted.`, status.recordset[0]);
+            throw new Error('exists');
+        }
+        // console.log(`File tracking entry added for ${fileName}`);
+    } catch (error) {
+        if (error.message !== 'exists') {
+            console.error('Error inserting into FileTracking:', error.code);
+            throw error;
+        } else {
+            // console.log('Error while pushing data to FileTracking.');
+            throw error;
+        }
     }
-    console.log(`File tracking entry added for ${fileName}`);
-  } catch (error) {
-    if (error.message !== 'exists') {
-      console.error('Error inserting into FileTracking:', error.code);
-      throw error;
-    } else {
-      console.log('File has already been inserted in the Table.');
-      throw new Error('exists');
-    }
-  }
 }
 
-module.exports = pushDataToFileTracking;
+export default pushDataToFileTracking;

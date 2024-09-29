@@ -1,17 +1,17 @@
-const sql = require('mssql');
-
+import pkg from 'mssql';
+const { Request, NVarChar } = pkg;
 const fileProcessed = async (dbConnection, fileName) => {
-  try {
-    const request = new sql.Request(dbConnection);
-    const insertQuery = `UPDATE FileTracking
+    try {
+        const request = new Request(dbConnection);
+        const insertQuery = `UPDATE FileTracking
                             SET Processed = 1
                             WHERE FileName = @fileName;`;
-    request.input('fileName', sql.NVarChar, fileName);
-    await request.query(insertQuery);
-    console.log(fileName + ' Processed : 1');
-  } catch (err) {
-    throw err;
-  }
+        request.input('fileName', NVarChar, fileName);
+        await request.query(insertQuery);
+        // console.log(fileName + ' Processed : 1');
+    } catch (err) {
+        throw err;
+    }
 };
 
-module.exports = fileProcessed;
+export default fileProcessed;
