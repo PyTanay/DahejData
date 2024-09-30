@@ -4,6 +4,8 @@ import csvParser from 'csv-parser';
 import dotenv from 'dotenv';
 import pLimit from 'p-limit';
 import allFunctions from './functions/index.js';
+import { error } from 'console';
+import { clearScreenDown } from 'readline';
 
 const {
     cleanCsvData,
@@ -54,8 +56,8 @@ async function processCsvFile(filePath, dbConnection) {
 
                             newDate = newDate.getTime() + (index - 9) * 60 * 60 * 1000; // Set the hour to 4 AM
                             newDate = new Date(newDate);
-
-                            return newDate;
+                            // console.log(newDate.toISOString());
+                            return newDate.toISOString();
                         }
                         return header;
                     },
@@ -77,23 +79,27 @@ async function processCsvFile(filePath, dbConnection) {
 
                     // Check for duplicates in the secondary table and insert new entries if necessary
                     await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName, tagKeyList);
-                    const tagKeys2 = await waitForTagKeyList();
                     // Insert the cleaned and transposed data into the primary table
                     await pushDataToPrimaryTable(dbConnection, tagKeyList, transposedData);
 
                     // console.log('Data pushed to database and file tracking updated.');
                     await fileProcessed(dbConnection, filename);
-                } catch (error) {
-                    if (error.message === 'exists') {
+                } catch (err3) {
+                    if (err3.message === 'exists') {
                         // console.error('File already inserted!');
+                    } else if (err3.message === 'primary:duplicate') {
+                        console.log(`Duplicate rows found in ${filename}`);
+                        reject(err3);
+                        throw err3;
                     } else {
-                        console.error('Error while pushing data:', error);
-                        throw error;
+                        console.err3('Error while pushing data:', err3);
+                        throw err3;
                     }
                 } finally {
                     // dbConnection.close();
+                    // console.log('resolved !!');
+                    resolve(`Processed ${filePath}`);
                 }
-                resolve(`Processed ${filePath}`);
             })
             .on('error', (error) => {
                 reject(error);
@@ -109,9 +115,9 @@ async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     const files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = files.length,
+    let total = 5 || files.length,
         current = 0;
-    total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
+    // total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
 
     // Connect to the database
     const dbConnection = await connectToDatabase();
@@ -128,11 +134,16 @@ async function processMultipleCsvFiles(directoryPath) {
                 // await dummyFunction(500);
                 // if (current === 3) throw new Error(`This is error generated in file number ${current + 1}!`);
                 current++;
-                b1.update(current);
-            } catch (err) {
-                errorOccurred = true; // Set flag if an error occurs
-                b1.stop();
-                throw err;
+                // b1.update(current);
+            } catch (err4) {
+                if (err4.message === 'primary:duplicate') {
+                    console.error('File skipped!');
+                } else {
+                    errorOccurred = true; // Set flag if an error occurs
+                    console.log(err4.message, 'From final');
+                }
+                // throw err4;
+                // b1.stop();
             }
             if (current === total) b1.stop();
         });
@@ -141,15 +152,15 @@ async function processMultipleCsvFiles(directoryPath) {
     // Wait for all processing to complete
     try {
         const results = await Promise.all(processingPromises);
-        await dbConnection.close();
         console.log('All files processed:');
     } catch (error) {
-        await dbConnection.close();
         console.error(error.message);
+    } finally {
+        await dbConnection.close();
     }
 }
 
-const directoryPath = './data'; // Change this to your CSV directory
+const directoryPath = process.env.FOLDER_PATH || './data'; // Change this to your CSV directory
 processMultipleCsvFiles(directoryPath);
 
 function dummyFunction(duration) {
