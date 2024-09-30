@@ -1,5 +1,6 @@
 import pkg from 'mssql';
 const { Request, NVarChar } = pkg;
+import pushDataToSecondaryTable from './pushDataToSecondaryTable.js';
 
 /**
  * Inserts an entry into the FileTracking table to track processed files.
@@ -27,7 +28,7 @@ async function pushDataToFileTracking(dbConnection, fileName) {
         const status = await request.query(query);
         // console.log(typeof status.recordset[0].Processed);
         if (status.recordset[0].Processed === true) {
-            console.log(`File ${fileName} Status Log: Already Inserted.`, status.recordset[0]);
+            // console.log(`File ${fileName} Status Log: Already Inserted.`, status.recordset[0]);
             throw new Error('exists');
         }
         // console.log(`File tracking entry added for ${fileName}`);

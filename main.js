@@ -1,13 +1,12 @@
+import allFunctions from './functions/index.js';
 import { createReadStream, readdirSync } from 'fs';
 import { basename, join } from 'path';
 import csvParser from 'csv-parser';
 import dotenv from 'dotenv';
 import pLimit from 'p-limit';
-import allFunctions from './functions/index.js';
-import { error } from 'console';
-import { clearScreenDown } from 'readline';
 
 const {
+    sharedResource,
     cleanCsvData,
     transposeData,
     extractInfoFromFilename,
@@ -23,7 +22,6 @@ const {
 dotenv.config();
 
 // This is central tagKeyList store and is kept here so that all concurrent instances can use the store
-const tagKeyList = {};
 
 // Main function to read and process the CSV file
 async function processCsvFile(filePath, dbConnection) {
@@ -39,7 +37,7 @@ async function processCsvFile(filePath, dbConnection) {
     };
 
     // Create a read stream and pipe it through the CSV parser
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
         // Store the cleaned CSVdata
         const cleanedData = [];
         createReadStream(filePath)
@@ -76,30 +74,26 @@ async function processCsvFile(filePath, dbConnection) {
                     // Check if file has been already inserted into the database
                     // Log this file in the FileTracking table
                     await pushDataToFileTracking(dbConnection, filename);
-
                     // Check for duplicates in the secondary table and insert new entries if necessary
-                    await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName, tagKeyList);
+                    await pushDataToSecondaryTable(dbConnection, cleanedData, sectionName, transposedData, filename);
                     // Insert the cleaned and transposed data into the primary table
-                    await pushDataToPrimaryTable(dbConnection, tagKeyList, transposedData);
-
+                    // await pushDataToPrimaryTable(dbConnection, transposedData);
                     // console.log('Data pushed to database and file tracking updated.');
-                    await fileProcessed(dbConnection, filename);
+                    // await fileProcessed(dbConnection, filename);
                 } catch (err3) {
                     if (err3.message === 'exists') {
                         // console.error('File already inserted!');
                     } else if (err3.message === 'primary:duplicate') {
                         console.log(`Duplicate rows found in ${filename}`);
-                        reject(err3);
-                        throw err3;
+                        resolve(`Processed ${filePath} with error!`);
+                        // reject(err3);
+                        // throw err3;
                     } else {
-                        console.err3('Error while pushing data:', err3);
+                        console.error('Error while pushing data:', err3);
                         throw err3;
                     }
-                } finally {
-                    // dbConnection.close();
-                    // console.log('resolved !!');
-                    resolve(`Processed ${filePath}`);
                 }
+                resolve(`Processed ${filePath}`);
             })
             .on('error', (error) => {
                 reject(error);
@@ -115,9 +109,9 @@ async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     const files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = 5 || files.length,
+    let total = files.length,
         current = 0;
-    // total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
+    total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
 
     // Connect to the database
     const dbConnection = await connectToDatabase();
@@ -131,19 +125,18 @@ async function processMultipleCsvFiles(directoryPath) {
             if (errorOccurred || current >= total) return; // Stop if an error occurred
             try {
                 await processCsvFile(filePath, dbConnection);
-                // await dummyFunction(500);
-                // if (current === 3) throw new Error(`This is error generated in file number ${current + 1}!`);
                 current++;
-                // b1.update(current);
+                b1.update(current);
             } catch (err4) {
                 if (err4.message === 'primary:duplicate') {
                     console.error('File skipped!');
+                    current++;
+                    b1.update(current);
                 } else {
                     errorOccurred = true; // Set flag if an error occurs
                     console.log(err4.message, 'From final');
                 }
-                // throw err4;
-                // b1.stop();
+                b1.stop();
             }
             if (current === total) b1.stop();
         });

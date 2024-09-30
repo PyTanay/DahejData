@@ -1,10 +1,7 @@
 import pkg from 'mssql';
-import { Mutex } from 'async-mutex';
-const mutex = new Mutex();
-import fs from 'fs';
-const { Request, Transaction, NVarChar, DateTime: _DateTime, Decimal } = pkg;
+import sharedResource from './sharedResource.js';
 
-// import { parseCustomDateTime, convertDateFormat } from './convertTimeTo24Hour';
+const { Request, Transaction, NVarChar, DateTime: _DateTime, Decimal } = pkg;
 
 /**
  * Inserts data into the hourlyData table.
@@ -14,14 +11,12 @@ const { Request, Transaction, NVarChar, DateTime: _DateTime, Decimal } = pkg;
  * @param {Object[]} data - The data to be inserted, each object containing DateTime and Value.
  * @returns {Promise<void>}
  */
-async function pushDataToPrimaryTable(dbConnection, tagKey, data) {
+async function pushDataToPrimaryTable(dbConnection, data) {
     const batchSize = Number(process.env.BATCHSIZE) || 2000;
     try {
         // Split data into batches
         for (let i = 0; i < data.length; i += batchSize) {
             const batch = data.slice(i, i + batchSize); // Get the current batch
-
-            const release = await mutex.acquire(); // Acquire mutex once per batch
 
             try {
                 const transaction = new Transaction(dbConnection);
@@ -42,15 +37,20 @@ async function pushDataToPrimaryTable(dbConnection, tagKey, data) {
                 for (const entry of batch) {
                     const { DateTime, Value, TagName, SrNo, Description } = entry;
 
-                    if (tagKey[SrNo + TagName + Description] == null) {
-                        console.log(tagKey);
-                        console.log(tagKey[SrNo + TagName + Description], SrNo, TagName);
+                    if ((await sharedResource.getValue(SrNo + TagName + Description)) == null) {
+                        console.log(await sharedResource.getAll());
+                        console.log(
+                            await sharedResource.getValue(SrNo + TagName + Description),
+                            SrNo + TagName + Description,
+                            SrNo,
+                            TagName,
+                            Description
+                        );
                         throw Error('TagKey is null');
                     }
 
-                    // Prepare the values for bulk insert
                     values.push(`(
-                        '${tagKey[SrNo + TagName + Description]}',
+                        '${await sharedResource.getValue(SrNo + TagName + Description)}',
                         '${DateTime}',
                         ${Value},
                         0
@@ -59,7 +59,7 @@ async function pushDataToPrimaryTable(dbConnection, tagKey, data) {
 
                 // Join all values to form a single bulk insert query for the current batch
                 bulkInsertQuery += values.join(', ');
-                // console.log(bulkInsertQuery);
+
                 // Execute the bulk insert for the batch
                 await request.query(bulkInsertQuery);
 
@@ -74,71 +74,11 @@ async function pushDataToPrimaryTable(dbConnection, tagKey, data) {
                 } else {
                     throw err;
                 }
-            } finally {
-                release(); // Release the mutex after the batch is processed
             }
         }
-
-        // const release = await mutex.acquire(); // Acquire the mutex
-        // try {
-        //     const transaction = new dbConnection.Transaction();
-        //     await transaction.begin();
-        //     const request = new Request(transaction);
-
-        //     // console.log(tagKey);
-        //     let bulkInsertQuery = `
-        //         INSERT INTO hourlyData (TagKey, DateTime, Value, Processed)
-        //         VALUES `;
-
-        //     const values = [];
-        //     for (const entry of data) {
-        //         const { DateTime, Value, TagName, SrNo, Description } = entry;
-        //         if (tagKey[SrNo + TagName + Description] == null) {
-        //             console.log(tagKey);
-        //             console.log(tagKey[SrNo + TagName + Description], SrNo, TagName);
-        //             throw Error();
-        //             // continue;
-        //         }
-        //         values.push(`(
-        //                 '${tagKey[SrNo + TagName + Description]}',
-        //                 '${DateTime.toISOString()}',
-        //                 ${Value},
-        //                 0
-        //             )`);
-
-        //         // Join all values to form a single bulk insert query
-        //         bulkInsertQuery += values.join(', ');
-
-        //         // Execute the bulk insert
-        //         await request.query(bulkInsertQuery);
-
-        //         await transaction.commit();
-        //     }
-
-        //     request.input('tagKey', NVarChar(36), tagKey[SrNo + TagName + Description]);
-        //     request.input('dateTime', _DateTime, DateTime);
-        //     request.input('value', Decimal(18, 2), Value); // Adjust precision and scale as needed
-        //     await request.query(insertQuery);
-        // } catch (error) {
-        //     if (error.number === 2627) {
-        //         // console.log(
-        //         //     'Duplicate entry found, skipping:',
-        //         //     entry.SrNo,
-        //         //     entry.TagName,
-        //         //     tagKey[entry.SrNo + entry.TagName + entry.Description]
-        //         // );
-        //         // continue;
-        //         // console.error('Error in pushDataToPrimaryTable:', error.number);
-        //         // throw error;
-        //     } else {
-        //         console.log('Error in pushDataToPrimaryTable:', entry);
-        //         throw error;
-        //     }
-        // } finally {
-        //     release();
-        // }
     } catch (err1) {
         if (err1.message === 'primary:duplicate') {
+            console.log('Duplicate error in primary!');
             throw err1;
         } else {
             console.log('Error in primary Table', err1);

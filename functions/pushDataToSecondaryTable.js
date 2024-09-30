@@ -1,125 +1,98 @@
 import pkg from 'mssql';
 import { v4 as uuidv4 } from 'uuid';
 const { Request, NVarChar, Float } = pkg;
-import { Mutex } from 'async-mutex';
-const mutex = new Mutex();
-import fs from 'fs';
-import { release } from 'os';
+import sharedResource from './sharedResource.js';
+import pushDataToPrimaryTable from './pushDataToPrimaryTable.js';
+import fileProcessed from './fileProcessed.js';
+
 /**
- * Inserts or updates entries in the TagDetails table.
+ * Inserts or updates entries in the TagDetails table using a single query.
  * If an entry with the same Tag Name, Description, Engg Units, and Alarm Value exists, it returns the existing TagKey.
  * Otherwise, it inserts a new entry and returns the newly generated TagKey.
  *
  * @param {sql.ConnectionPool} dbConnection - The database connection object.
  * @param {Array} tagDetails - The array of tag details to be inserted or checked.
  * @param {string} sectionName - The section name extracted from the filename.
+ * @param {number} maxRetries - The maximum number of retries for handling errors like 2627.
  * @returns {Promise<Array<string>>} - The list of TagKeys of the inserted or existing entries.
  */
-async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, tagKeyList) {
-    // const tagKeyList = {};
-    // corrector function for duplicate description in file
-    // const descriptionList = [];
-    // for (let elem of tagDetails) {
-    //     descriptionList.push(elem['Description']);
-    // }
-    // descriptionList.forEach((elem, j) => {
-    //     var conflictNo = 1;
-    //     for (let i = j + 1; i < descriptionList.length; i++) {
-    //         if (descriptionList[i] === descriptionList[j]) {
-    //             descriptionList[i] = descriptionList[i] + '_' + conflictNo;
-    //             conflictNo++;
-    //         }
-    //     }
-    // });
-    // if (tagDetails.length !== descriptionList.length)
-    //     throw new Error(
-    //         'Error in push to secondary table corrector function for duplicate discription entries. Lenght of corrected array does not match actual data!'
-    //     );
-    // for (let k = 0; k < tagDetails.length; k++) {
-    //     tagDetails[k]['Description'] = descriptionList[k];
-    // }
-    // for(let k=0;k<descriptionList["Description"].length)
-    // fs.writeFile('./log.json', JSON.stringify(tagDetails), (err) => {
-    //     if (err) throw err;
-    //     console.log('File was saved!');
-    // });
-
+async function pushDataToSecondaryTable(
+    dbConnection,
+    tagDetails,
+    sectionName,
+    transposedData,
+    filename,
+    maxRetries = 3
+) {
     try {
         for (let i = 1; i < tagDetails.length; i++) {
             const uniqID = uuidv4();
-            const request = new Request(dbConnection);
-            // console.log(tagDetails[i]);
-            // console.log(tagDetails[i]);
-            try {
-                // First, check if an entry with the same Tag Name, Description, Engg Units, Alarm Value, and SectionName exists
-                const selectQuery = `
-                  SELECT TagKey FROM TagDetails
-                  WHERE TagName = @tagName
-                    AND Description = @descriptiom`;
+            let retryCount = 0;
+            let success = false;
 
-                request.input('tagName', NVarChar, tagDetails[i]['Tag Name']);
-                request.input('descriptiom', NVarChar, tagDetails[i]['Description']);
+            while (!success && retryCount < maxRetries) {
+                try {
+                    const request = new Request(dbConnection);
 
-                const result = await request.query(selectQuery);
+                    // Use the MERGE statement to insert or return existing TagKey
+                    const mergeQuery = `
+                      MERGE TagDetails AS target
+                      USING (SELECT @tagName AS TagName, @description AS Description, @enggUnits AS EnggUnits, @alarmValue AS AlarmValue, @sectionName AS SectionName) AS source
+                      ON target.TagName = source.TagName AND target.Description = source.Description
+                      WHEN MATCHED THEN 
+                          UPDATE SET target.TagKey = target.TagKey
+                      WHEN NOT MATCHED THEN 
+                          INSERT (TagKey, TagName, Description, EnggUnits, AlarmValue, SectionName)
+                          VALUES (@tagKey , source.TagName, source.Description, source.EnggUnits, source.AlarmValue, source.SectionName)
+                      OUTPUT inserted.TagKey;`;
 
-                if (result.recordset.length > 0) {
-                    // If entry exists, return the existing TagKey
-                    // console.log(`TagKey found for ${tagDetails[i]['Tag Name']}:`, tagDetails[i]['Tag Name'], tagDetails[i].Description);
-                    const release1 = await mutex.acquire(); // Acquire the mutex
-                    try {
-                        if (!tagKeyList[tagDetails[i]['Sr No'] + tagDetails[i]['Tag Name'] + tagDetails[i].Description])
-                            tagKeyList[tagDetails[i]['Sr No'] + tagDetails[i]['Tag Name'] + tagDetails[i].Description] =
-                                result.recordset[0].TagKey;
-                    } catch (err) {
-                        throw err;
-                    } finally {
-                        release1();
+                    request.input('tagKey', NVarChar(36), uniqID);
+                    request.input('tagName', NVarChar, tagDetails[i]['Tag Name']);
+                    request.input('description', NVarChar, tagDetails[i].Description);
+                    request.input('enggUnits', NVarChar, tagDetails[i]['Engg Units']);
+                    request.input('alarmValue', Float, Number(tagDetails[i]['Alarm\nValue']));
+                    request.input('sectionName', NVarChar, sectionName);
+
+                    const result = await request.query(mergeQuery);
+
+                    // Store the TagKey in the sharedResource
+                    const tagKey = result.recordset[0].TagKey;
+                    await sharedResource.addKeyValue(
+                        tagDetails[i]['Sr No'] + tagDetails[i]['Tag Name'] + tagDetails[i].Description,
+                        tagKey
+                    );
+
+                    if (!tagKey) {
+                        throw new Error('TagKey not pushed into the object!');
                     }
-                } else {
-                    // If entry does not exist, insert a new entry
-                    const insertRequest = new Request(dbConnection);
-                    const insertQuery = `
-                      INSERT INTO TagDetails (TagKey, TagName, Description, EnggUnits, AlarmValue, SectionName)
-                      OUTPUT inserted.TagKey
-                      VALUES (@tagKey , @tagName, @description, @enggUnits, @alarmValue, @sectionName)`;
 
-                    insertRequest.input('tagKey', NVarChar(36), uniqID);
-                    insertRequest.input('tagName', NVarChar, tagDetails[i]['Tag Name']);
-                    insertRequest.input('description', NVarChar, tagDetails[i].Description);
-                    insertRequest.input('enggUnits', NVarChar, tagDetails[i]['Engg Units']);
-                    insertRequest.input('alarmValue', Float, Number(tagDetails[i]['Alarm\nValue']));
-                    insertRequest.input('sectionName', NVarChar, sectionName);
-
-                    const insertResult = await insertRequest.query(insertQuery);
-
-                    const release2 = await mutex.acquire(); // Acquire the mutex
-                    try {
-                        tagKeyList[tagDetails[i]['Sr No'] + tagDetails[i]['Tag Name'] + tagDetails[i].Description] =
-                            insertResult.recordset[0].TagKey;
-                    } catch (err) {
+                    success = true; // If the code reaches here, the operation was successful
+                } catch (err) {
+                    if (err.number === 2627) {
+                        retryCount++;
+                        // console.log(`Error 2627 encountered. Retrying ${retryCount}/${maxRetries}...`);
+                        if (retryCount >= maxRetries) {
+                            console.log(`Max retries reached for ${tagDetails[i]['Tag Name']}`);
+                            throw err; // If max retries are reached, throw the error
+                        }
+                    } else {
+                        // If it's not a 2627 error, throw it immediately
+                        console.log('Error while pushing data to secondary table:', err);
                         throw err;
-                    } finally {
-                        release2();
                     }
-                }
-            } catch (err) {
-                // console.log('Error while pushing data to secondary table.');
-                // throw err;
-                if (err.number === 2627) {
-                    return false;
-                } else {
-                    console.log('Error while pushing data to secondary table:', err);
-                    throw err;
                 }
             }
         }
     } catch (error) {
         console.error('Error in pushDataToSecondaryTable:', error);
         throw error;
-    } finally {
-        release();
     }
-    // return tagKeyList;
+
+    // Proceed with primary table and file processing
+    await pushDataToPrimaryTable(dbConnection, transposedData, filename);
+    await fileProcessed(dbConnection, filename);
+
+    return true;
 }
 
 export default pushDataToSecondaryTable;
