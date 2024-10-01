@@ -10,6 +10,7 @@ const fileProcessed = async (dbConnection, fileName) => {
         await request.query(insertQuery);
         // console.log(fileName + ' Processed : 1');
     } catch (err) {
+        console.log(`fileProcessed: ${fileName}`);
         throw err;
     }
 };

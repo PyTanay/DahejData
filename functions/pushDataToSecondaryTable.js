@@ -1,6 +1,7 @@
 import pkg from 'mssql';
 import { v4 as uuidv4 } from 'uuid';
 const { Request, NVarChar, Float } = pkg;
+import { appendFile } from 'fs';
 import sharedResource from './sharedResource.js';
 import pushDataToPrimaryTable from './pushDataToPrimaryTable.js';
 import fileProcessed from './fileProcessed.js';
@@ -16,17 +17,11 @@ import fileProcessed from './fileProcessed.js';
  * @param {number} maxRetries - The maximum number of retries for handling errors like 2627.
  * @returns {Promise<Array<string>>} - The list of TagKeys of the inserted or existing entries.
  */
-async function pushDataToSecondaryTable(
-    dbConnection,
-    tagDetails,
-    sectionName,
-    transposedData,
-    filename,
-    maxRetries = 3
-) {
+async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, transposedData, filename) {
     try {
         for (let i = 1; i < tagDetails.length; i++) {
             const uniqID = uuidv4();
+            let maxRetries = 3;
             let retryCount = 0;
             let success = false;
 
@@ -77,20 +72,30 @@ async function pushDataToSecondaryTable(
                         }
                     } else {
                         // If it's not a 2627 error, throw it immediately
-                        console.log('Error while pushing data to secondary table:', err);
+                        console.log('Error while pushing data to secondary table after 3 retries!', err);
                         throw err;
                     }
                 }
             }
         }
     } catch (error) {
-        console.error('Error in pushDataToSecondaryTable:', error);
+        console.error('pushDataToSecondaryTable:', error);
         throw error;
     }
 
     // Proceed with primary table and file processing
-    await pushDataToPrimaryTable(dbConnection, transposedData, filename);
-    await fileProcessed(dbConnection, filename);
+    try {
+        await pushDataToPrimaryTable(dbConnection, transposedData, filename);
+        await fileProcessed(dbConnection, filename);
+    } catch (err5) {
+        if (err5.message === 'primary:duplicate') {
+            await fileProcessed(dbConnection, filename);
+            appendFile('./logfile.log', `secondaryPush: primaryPush : Duplicate entry found.: ${filename}\n`, (err) => {
+                if (err) console.error('Error appending to logfile', err);
+            });
+        }
+        throw err5;
+    }
 
     return true;
 }

@@ -1,4 +1,5 @@
 import pkg from 'mssql';
+import { appendFile } from 'fs';
 import sharedResource from './sharedResource.js';
 
 const { Request, Transaction, NVarChar, DateTime: _DateTime, Decimal } = pkg;
@@ -18,8 +19,9 @@ async function pushDataToPrimaryTable(dbConnection, data) {
         for (let i = 0; i < data.length; i += batchSize) {
             const batch = data.slice(i, i + batchSize); // Get the current batch
 
+            let transaction;
             try {
-                const transaction = new Transaction(dbConnection);
+                transaction = new Transaction(dbConnection);
                 await transaction.begin();
                 const request = new Request(transaction);
 
@@ -66,19 +68,25 @@ async function pushDataToPrimaryTable(dbConnection, data) {
                 // Commit the transaction for the batch
                 await transaction.commit();
             } catch (err) {
+                if (transaction) {
+                    await transaction.rollback(); // Ensure rollback on error
+                }
                 if (err.number === 10738) {
                     console.log('More than 1000 rows');
-                    throw err();
+                    throw err;
                 } else if (err.number === 2627) {
                     throw new Error('primary:duplicate');
                 } else {
+                    console.log(`Error in batch primary table data push. Batch: ${i}`);
                     throw err;
                 }
             }
         }
     } catch (err1) {
         if (err1.message === 'primary:duplicate') {
-            console.log('Duplicate error in primary!');
+            appendFile('./logfile.log', 'primaryPush : Duplicate entry\n', (err) => {
+                if (err) console.error('Error appending to logfile', err);
+            });
             throw err1;
         } else {
             console.log('Error in primary Table', err1);

@@ -1,5 +1,5 @@
 import allFunctions from './functions/index.js';
-import { createReadStream, readdirSync } from 'fs';
+import { createReadStream, readdirSync, appendFile } from 'fs';
 import { basename, join } from 'path';
 import csvParser from 'csv-parser';
 import dotenv from 'dotenv';
@@ -80,20 +80,24 @@ async function processCsvFile(filePath, dbConnection) {
                     // await pushDataToPrimaryTable(dbConnection, transposedData);
                     // console.log('Data pushed to database and file tracking updated.');
                     // await fileProcessed(dbConnection, filename);
+                    resolve(`Processed ${filePath}`);
                 } catch (err3) {
                     if (err3.message === 'exists') {
                         // console.error('File already inserted!');
+                        resolve(`Processed ${filePath} with error!`);
                     } else if (err3.message === 'primary:duplicate') {
-                        console.log(`Duplicate rows found in ${filename}`);
+                        appendFile('./logfile.log', `Main : ProcessCSV : ${filename}\n`, (err) => {
+                            if (err) console.error('Error appending to logfile', err);
+                        });
                         resolve(`Processed ${filePath} with error!`);
                         // reject(err3);
                         // throw err3;
                     } else {
-                        console.error('Error while pushing data:', err3);
+                        console.log('Main : ProcessCSV : ', filename);
+                        console.error('Error:', err3);
                         throw err3;
                     }
                 }
-                resolve(`Processed ${filePath}`);
             })
             .on('error', (error) => {
                 reject(error);
@@ -107,12 +111,12 @@ async function processCsvFile(filePath, dbConnection) {
 
 async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
-    const files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
+    let files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = files.length,
+    let total = 200 || files.length,
         current = 0;
     total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
-
+    files = files.slice(current, total);
     // Connect to the database
     const dbConnection = await connectToDatabase();
 
@@ -132,13 +136,15 @@ async function processMultipleCsvFiles(directoryPath) {
                     console.error('File skipped!');
                     current++;
                     b1.update(current);
+                    return 'Not Done';
                 } else {
                     errorOccurred = true; // Set flag if an error occurs
                     console.log(err4.message, 'From final');
                 }
-                b1.stop();
+                // b1.stop();
             }
             if (current === total) b1.stop();
+            return 'Done';
         });
     });
 
@@ -146,8 +152,16 @@ async function processMultipleCsvFiles(directoryPath) {
     try {
         const results = await Promise.all(processingPromises);
         console.log('All files processed:');
+        results.forEach((result, index) => {
+            // console.log(result, index);
+            if (result.status === 'rejected') {
+                console.error(`Error processing file ${files[index]}: ${result}`);
+            } else {
+                // console.log(result);
+            }
+        });
     } catch (error) {
-        console.error(error.message);
+        console.error(error.message, error);
     } finally {
         await dbConnection.close();
     }

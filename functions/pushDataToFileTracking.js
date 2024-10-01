@@ -1,5 +1,6 @@
 import pkg from 'mssql';
 const { Request, NVarChar } = pkg;
+import { appendFile } from 'fs';
 import pushDataToSecondaryTable from './pushDataToSecondaryTable.js';
 
 /**
@@ -33,11 +34,14 @@ async function pushDataToFileTracking(dbConnection, fileName) {
         }
         // console.log(`File tracking entry added for ${fileName}`);
     } catch (error) {
-        if (error.message !== 'exists') {
-            console.error('Error inserting into FileTracking:', error.code);
+        if (error.message === 'exists') {
+            appendFile('./logfile.log', `FileTracking: File already inserted: ${fileName}\n`, (err) => {
+                if (err) console.error('Error appending to logfile', err);
+            });
             throw error;
         } else {
             // console.log('Error while pushing data to FileTracking.');
+            console.log('FileTracking:', fileName, error);
             throw error;
         }
     }
