@@ -1,7 +1,7 @@
 import pkg from 'mssql';
-import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from 'uuid';
 const { Request, NVarChar, Float } = pkg;
-import { appendFile } from 'fs';
+// import { appendFile } from 'fs';
 import sharedResource from './sharedResource.js';
 import pushDataToPrimaryTable from './pushDataToPrimaryTable.js';
 import fileProcessed from './fileProcessed.js';
@@ -29,7 +29,7 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
                 continue;
             }
 
-            const uniqID = uuidv4();
+            // const uniqID = uuidv4();
             let maxRetries = 3;
             let retryCount = 0;
             let success = false;
@@ -39,18 +39,27 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
                     const request = new Request(dbConnection);
 
                     // Use the MERGE statement to insert or return existing TagKey
-                    const mergeQuery = `
-                      MERGE TagDetails AS target
-                      USING (SELECT @tagName AS TagName, @description AS Description, @enggUnits AS EnggUnits, @alarmValue AS AlarmValue, @sectionName AS SectionName) AS source
-                      ON target.TagName = source.TagName AND target.Description = source.Description
-                      WHEN MATCHED THEN 
-                          UPDATE SET target.TagKey = target.TagKey
-                      WHEN NOT MATCHED THEN 
-                          INSERT (TagKey, TagName, Description, EnggUnits, AlarmValue, SectionName)
-                          VALUES (@tagKey , source.TagName, source.Description, source.EnggUnits, source.AlarmValue, source.SectionName)
-                      OUTPUT inserted.TagKey;`;
+                    const mergeQuery = `DECLARE @TagKey INT;
 
-                    request.input('tagKey', NVarChar(36), uniqID);
+    -- Check for existing TagKey
+    SELECT @TagKey = TagKey
+    FROM TagDetails
+    WHERE TagName = @tagName AND Description = @description;
+
+    -- If no TagKey found, insert new record
+    IF @TagKey IS NULL
+    BEGIN
+        INSERT INTO TagDetails (TagName, Description, EnggUnits, AlarmValue, SectionName)
+        VALUES (@tagName, @description, @enggUnits, @alarmValue, @sectionName);
+
+        -- Get the TagKey of the newly inserted record
+        SET @TagKey = SCOPE_IDENTITY();
+    END;
+
+    -- Return the TagKey
+    SELECT @TagKey AS TagKey;`;
+
+                    // request.input('tagKey', NVarChar(36), uniqID);
                     request.input('tagName', NVarChar, tagDetails[i]['Tag Name']);
                     request.input('description', NVarChar, tagDetails[i].Description);
                     request.input('enggUnits', NVarChar, tagDetails[i]['Engg Units']);

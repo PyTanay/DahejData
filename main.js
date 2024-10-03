@@ -127,7 +127,7 @@ async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     let files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = 1600 || files.length,
+    let total = 10 || files.length,
         current = 0;
     total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
     files = files.slice(current, total);
