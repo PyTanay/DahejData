@@ -61,23 +61,24 @@ async function processCsvFile(filePath, dbConnection) {
                     },
                 })
             )
-            .on('data', (row) => {
+            .on('data', async (row) => {
                 try {
                     cleanCsvData(row, cleanedData, state, baseDate);
                 } catch (err) {
-                    if (state.rowCount === 0) {
-                        sharedResource.logError(`CSV file data not as expected. Filename: ${filename}`);
+                    if (state.rowCount === 1) {
+                        await sharedResource.logError(`CSV file data not as expected. Filename: ${filename}`);
                         resolve(`Processed ${filePath} with error!`);
                     }
                 }
             })
             .on('end', async () => {
-                tagNameCorrector(cleanedData);
-                // Transpose the cleaned data
-
-                const transposedData = transposeData(cleanedData, state.cleanedHeaders);
-
                 try {
+                    if (state.cleanedHeaders === null) throw new Error('CleanCsvData: Data Error');
+
+                    tagNameCorrector(cleanedData);
+                    // Transpose the cleaned data
+                    const transposedData = transposeData(cleanedData, state.cleanedHeaders);
+
                     // Check if file has been already inserted into the database
                     // Log this file in the FileTracking table
                     await pushDataToFileTracking(dbConnection, filename);
@@ -97,6 +98,8 @@ async function processCsvFile(filePath, dbConnection) {
                         resolve(`Processed ${filePath} with error!`);
                         // reject(err3);
                         // throw err3;
+                    } else if (err3.message === 'CleanCsvData: Data Error') {
+                        resolve(`Processed ${filePath} with error!`);
                     } else {
                         console.log('Main : ProcessCSV : ', filename);
                         console.error('Error:', err3);
@@ -105,8 +108,8 @@ async function processCsvFile(filePath, dbConnection) {
                 }
             })
             .on('error', (error) => {
+                console.log('Tanayyyyy');
                 if (error.message === 'CleanCsvData: Data Error') {
-                    sharedResource.logError(`CSV file data not as expected. Filename: ${filename}`);
                     resolve(`Processed ${filePath} with error!`);
                 } else {
                     console.log(error.message);
@@ -124,7 +127,7 @@ async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     let files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = 800 || files.length,
+    let total = 1600 || files.length,
         current = 0;
     total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
     files = files.slice(current, total);
@@ -168,7 +171,6 @@ async function processMultipleCsvFiles(directoryPath) {
             if (result.status === 'rejected') {
                 console.error(`Error processing file ${files[index]}: ${result}`);
             } else {
-                // console.log(result);
             }
         });
     } catch (error) {

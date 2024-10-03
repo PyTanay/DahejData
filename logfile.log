@@ -1,57 +1,52 @@
-2024-10-03T07:57:04.035Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.038Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.038Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.039Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.039Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.040Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.040Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.040Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:04.044Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T07:57:05.408Z: primaryPush : Duplicate entry
-2024-10-03T07:57:05.420Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202020_08%2035%2001)%20.csv
-2024-10-03T07:57:05.420Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202020_08%2035%2001)%20.csv
-2024-10-03T07:57:06.124Z: primaryPush : Duplicate entry
-2024-10-03T07:57:06.128Z: primaryPush : Duplicate entry
-2024-10-03T07:57:06.129Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202022_06%2013%2048)%20.csv
-2024-10-03T07:57:06.130Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202022_06%2013%2048)%20.csv
-2024-10-03T07:57:06.140Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202023_06%2005%2036)%20.csv
-2024-10-03T07:57:06.140Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202023_06%2005%2036)%20.csv
-2024-10-03T08:07:04.813Z: primaryPush : Duplicate entry
-2024-10-03T08:07:04.839Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C101_Daily_Snapshot_New%20(17%20Aug%202021_17%2014%2002)%20.csv
-2024-10-03T08:07:04.840Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C101_Daily_Snapshot_New%20(17%20Aug%202021_17%2014%2002)%20.csv
-2024-10-03T08:07:51.885Z: primaryPush : Duplicate entry
-2024-10-03T08:07:51.891Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(01%20Sep%202021_16%2015%2054)%20.csv
-2024-10-03T08:07:51.893Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(01%20Sep%202021_16%2015%2054)%20.csv
-2024-10-03T08:08:29.426Z: primaryPush : Duplicate entry
-2024-10-03T08:08:29.434Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Nov%202021_20%2047%2051)%20.csv
-2024-10-03T08:08:29.435Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Nov%202021_20%2047%2051)%20.csv
-2024-10-03T08:08:36.849Z: primaryPush : Duplicate entry
-2024-10-03T08:08:36.854Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Sep%202021_16%2020%2003)%20.csv
-2024-10-03T08:08:36.855Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Sep%202021_16%2020%2003)%20.csv
-2024-10-03T08:09:22.370Z: primaryPush : Duplicate entry
-2024-10-03T08:09:22.377Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(03%20Sep%202021_16%2013%2031)%20.csv
-2024-10-03T08:09:22.378Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(03%20Sep%202021_16%2013%2031)%20.csv
-2024-10-03T08:10:08.009Z: primaryPush : Duplicate entry
-2024-10-03T08:10:08.017Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(04%20Sep%202021_16%2024%2036)%20.csv
-2024-10-03T08:10:08.018Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(04%20Sep%202021_16%2024%2036)%20.csv
-2024-10-03T08:10:10.114Z: primaryPush : Duplicate entry
-2024-10-03T08:10:10.120Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Apr%202019_15%2003%2019)%20.csv
-2024-10-03T08:10:10.121Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Apr%202019_15%2003%2019)%20.csv
-2024-10-03T08:10:55.418Z: primaryPush : Duplicate entry
-2024-10-03T08:10:55.457Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Sep%202021_16%2020%2027)%20.csv
-2024-10-03T08:10:55.457Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Sep%202021_16%2020%2027)%20.csv
-2024-10-03T08:11:34.925Z: primaryPush : Duplicate entry
-2024-10-03T08:11:34.932Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Nov%202021_15%2046%2017)%20.csv
-2024-10-03T08:11:34.933Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Nov%202021_15%2046%2017)%20.csv
-2024-10-03T08:11:42.612Z: primaryPush : Duplicate entry
-2024-10-03T08:11:42.618Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Sep%202021_16%2021%2039)%20.csv
-2024-10-03T08:11:42.618Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Sep%202021_16%2021%2039)%20.csv
-2024-10-03T08:11:50.666Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.667Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.668Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.668Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.669Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.669Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.670Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.671Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
-2024-10-03T08:11:50.673Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
+2024-10-03T09:07:43.455Z: primaryPush : Duplicate entry
+2024-10-03T09:07:43.469Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C101_Daily_Snapshot_New1%20(17%20Aug%202021_17%2028%2038)%20.csv
+2024-10-03T09:07:43.470Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C101_Daily_Snapshot_New1%20(17%20Aug%202021_17%2028%2038)%20.csv
+2024-10-03T09:08:30.395Z: primaryPush : Duplicate entry
+2024-10-03T09:08:30.411Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(01%20Sep%202021_16%2015%2054)%20.csv
+2024-10-03T09:08:30.412Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(01%20Sep%202021_16%2015%2054)%20.csv
+2024-10-03T09:09:08.535Z: primaryPush : Duplicate entry
+2024-10-03T09:09:08.555Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Nov%202021_20%2047%2051)%20.csv
+2024-10-03T09:09:08.556Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Nov%202021_20%2047%2051)%20.csv
+2024-10-03T09:09:15.990Z: primaryPush : Duplicate entry
+2024-10-03T09:09:16.014Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Sep%202021_16%2020%2003)%20.csv
+2024-10-03T09:09:16.015Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(02%20Sep%202021_16%2020%2003)%20.csv
+2024-10-03T09:10:01.728Z: primaryPush : Duplicate entry
+2024-10-03T09:10:01.748Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(03%20Sep%202021_16%2013%2031)%20.csv
+2024-10-03T09:10:01.749Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(03%20Sep%202021_16%2013%2031)%20.csv
+2024-10-03T09:10:48.062Z: primaryPush : Duplicate entry
+2024-10-03T09:10:48.110Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(04%20Sep%202021_16%2024%2036)%20.csv
+2024-10-03T09:10:48.111Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(04%20Sep%202021_16%2024%2036)%20.csv
+2024-10-03T09:10:50.149Z: primaryPush : Duplicate entry
+2024-10-03T09:10:50.155Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Apr%202019_15%2003%2019)%20.csv
+2024-10-03T09:10:50.156Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Apr%202019_15%2003%2019)%20.csv
+2024-10-03T09:11:33.560Z: primaryPush : Duplicate entry
+2024-10-03T09:11:33.574Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Sep%202021_16%2020%2027)%20.csv
+2024-10-03T09:11:33.575Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(05%20Sep%202021_16%2020%2027)%20.csv
+2024-10-03T09:12:11.107Z: primaryPush : Duplicate entry
+2024-10-03T09:12:11.112Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Nov%202021_15%2046%2017)%20.csv
+2024-10-03T09:12:11.113Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Nov%202021_15%2046%2017)%20.csv
+2024-10-03T09:12:18.447Z: primaryPush : Duplicate entry
+2024-10-03T09:12:18.459Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Sep%202021_16%2021%2039)%20.csv
+2024-10-03T09:12:18.460Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(06%20Sep%202021_16%2021%2039)%20.csv
+2024-10-03T09:12:25.423Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
+2024-10-03T09:13:02.596Z: primaryPush : Duplicate entry
+2024-10-03T09:13:02.601Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Sep%202021_08%2056%2003)%20.csv
+2024-10-03T09:13:02.602Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Sep%202021_08%2056%2003)%20.csv
+2024-10-03T09:13:02.681Z: primaryPush : Duplicate entry
+2024-10-03T09:13:02.701Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Sep%202021_11%2048%2050)%20.csv
+2024-10-03T09:13:02.703Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Sep%202021_11%2048%2050)%20.csv
+2024-10-03T09:13:02.806Z: primaryPush : Duplicate entry
+2024-10-03T09:13:02.814Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Sep%202021_14%2049%2000)%20.csv
+2024-10-03T09:13:02.815Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Sep%202021_14%2049%2000)%20.csv
+2024-10-03T09:13:05.714Z: primaryPush : Duplicate entry
+2024-10-03T09:13:05.746Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(08%20Apr%202019_08%2037%2055)%20.csv
+2024-10-03T09:13:05.747Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(08%20Apr%202019_08%2037%2055)%20.csv
+2024-10-03T09:14:45.310Z: primaryPush : Duplicate entry
+2024-10-03T09:14:45.563Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(10%20Dec%202021_16%2039%2002)%20.csv
+2024-10-03T09:14:45.565Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(10%20Dec%202021_16%2039%2002)%20.csv
+2024-10-03T09:15:16.446Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(10%20Sep%202017_08%2035%2001)%20.csv
+2024-10-03T09:19:04.476Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(07%20Aug%202021_08%2056%2002)%20.csv
+2024-10-03T09:19:06.726Z: CSV file data not as expected. Filename: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(10%20Sep%202017_08%2035%2001)%20.csv
+2024-10-03T09:19:09.313Z: primaryPush : Duplicate entry
+2024-10-03T09:19:09.317Z: secondaryPush: primaryPush : Duplicate entry found.: BOILER_BCU_AIR_VAM-C400_Daily_Average%20(13%20Apr%202019_11%2057%2047)%20.csv
+2024-10-03T09:19:09.318Z: Main : ProcessCSV : BOILER_BCU_AIR_VAM-C400_Daily_Average%20(13%20Apr%202019_11%2057%2047)%20.csv
