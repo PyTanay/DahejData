@@ -1,5 +1,4 @@
 import pkg from 'mssql';
-import { appendFile } from 'fs';
 import sharedResource from './sharedResource.js';
 
 const { Request, Transaction, NVarChar, DateTime: _DateTime, Decimal } = pkg;
@@ -84,9 +83,7 @@ async function pushDataToPrimaryTable(dbConnection, data) {
         }
     } catch (err1) {
         if (err1.message === 'primary:duplicate') {
-            appendFile('./logfile.log', 'primaryPush : Duplicate entry\n', (err) => {
-                if (err) console.error('Error appending to logfile', err);
-            });
+            sharedResource.logError(`primaryPush : Duplicate entry`);
             throw err1;
         } else {
             console.log('Error in primary Table', err1);

@@ -2,6 +2,7 @@ import pkg from 'mssql';
 const { Request, NVarChar } = pkg;
 import { appendFile } from 'fs';
 import pushDataToSecondaryTable from './pushDataToSecondaryTable.js';
+import sharedResource from './sharedResource.js';
 
 /**
  * Inserts an entry into the FileTracking table to track processed files.
@@ -35,9 +36,7 @@ async function pushDataToFileTracking(dbConnection, fileName) {
         // console.log(`File tracking entry added for ${fileName}`);
     } catch (error) {
         if (error.message === 'exists') {
-            appendFile('./logfile.log', `FileTracking: File already inserted: ${fileName}\n`, (err) => {
-                if (err) console.error('Error appending to logfile', err);
-            });
+            // sharedResource.logError(`FileTracking: File already inserted: ${fileName}`);
             throw error;
         } else {
             // console.log('Error while pushing data to FileTracking.');

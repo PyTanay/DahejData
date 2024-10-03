@@ -1,5 +1,5 @@
 import allFunctions from './functions/index.js';
-import { createReadStream, readdirSync, appendFile } from 'fs';
+import { createReadStream, readdirSync } from 'fs';
 import { basename, join } from 'path';
 import csvParser from 'csv-parser';
 import dotenv from 'dotenv';
@@ -62,7 +62,14 @@ async function processCsvFile(filePath, dbConnection) {
                 })
             )
             .on('data', (row) => {
-                cleanCsvData(row, cleanedData, state, baseDate);
+                try {
+                    cleanCsvData(row, cleanedData, state, baseDate);
+                } catch (err) {
+                    if (state.rowCount === 0) {
+                        sharedResource.logError(`CSV file data not as expected. Filename: ${filename}`);
+                        resolve(`Processed ${filePath} with error!`);
+                    }
+                }
             })
             .on('end', async () => {
                 tagNameCorrector(cleanedData);
@@ -86,9 +93,7 @@ async function processCsvFile(filePath, dbConnection) {
                         // console.error('File already inserted!');
                         resolve(`Processed ${filePath} with error!`);
                     } else if (err3.message === 'primary:duplicate') {
-                        appendFile('./logfile.log', `Main : ProcessCSV : ${filename}\n`, (err) => {
-                            if (err) console.error('Error appending to logfile', err);
-                        });
+                        sharedResource.logError(`Main : ProcessCSV : ${filename}`);
                         resolve(`Processed ${filePath} with error!`);
                         // reject(err3);
                         // throw err3;
@@ -100,7 +105,13 @@ async function processCsvFile(filePath, dbConnection) {
                 }
             })
             .on('error', (error) => {
-                reject(error);
+                if (error.message === 'CleanCsvData: Data Error') {
+                    sharedResource.logError(`CSV file data not as expected. Filename: ${filename}`);
+                    resolve(`Processed ${filePath} with error!`);
+                } else {
+                    console.log(error.message);
+                    reject(error);
+                }
             });
     });
 }
@@ -113,7 +124,7 @@ async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     let files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = 200 || files.length,
+    let total = 800 || files.length,
         current = 0;
     total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
     files = files.slice(current, total);

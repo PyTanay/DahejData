@@ -1,9 +1,18 @@
 import { Mutex } from 'async-mutex';
+import fs from 'fs';
 
 class SharedResource {
     constructor() {
         this.mutex = new Mutex();
+        this.logMutex = new Mutex();
         this.data = {}; // Shared resource as an object
+    }
+    async logError(message) {
+        this.logMutex
+            .runExclusive(() => {
+                fs.appendFileSync('logfile.log', `${new Date().toISOString()}: ${message}\n`);
+            })
+            .catch((err) => console.error(err));
     }
 
     async addKeyValue(key, value) {

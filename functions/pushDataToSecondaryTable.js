@@ -69,11 +69,13 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
 
                     success = true; // If the code reaches here, the operation was successful
                 } catch (err) {
-                    if (err.number === 2627) {
+                    if (err.number !== 2627) {
                         retryCount++;
+                        const logData = JSON.stringify(tagDetails[i]);
                         // console.log(`Error 2627 encountered. Retrying ${retryCount}/${maxRetries}...`);
+                        sharedResource.logError(`Max retries reached for ${tagDetails[i]},${filename},${logData}`);
                         if (retryCount >= maxRetries) {
-                            console.log(`Max retries reached for ${tagDetails[i]['Tag Name']}`);
+                            // console.log(`Max retries reached for ${tagDetails[i]['Tag Name']}`);
                             throw err; // If max retries are reached, throw the error
                         }
                     } else {
@@ -96,9 +98,7 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
     } catch (err5) {
         if (err5.message === 'primary:duplicate') {
             await fileProcessed(dbConnection, filename);
-            appendFile('./logfile.log', `secondaryPush: primaryPush : Duplicate entry found.: ${filename}\n`, (err) => {
-                if (err) console.error('Error appending to logfile', err);
-            });
+            sharedResource.logError(`secondaryPush: primaryPush : Duplicate entry found.: ${filename}`);
         }
         throw err5;
     }

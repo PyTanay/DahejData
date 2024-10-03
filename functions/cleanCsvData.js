@@ -10,9 +10,11 @@
 function cleanCsvData(row, cleanedData, state, baseDate) {
     // Track the current row count
     state.rowCount++;
+    if (row['Sr No'] !== '1' && state.rowCount === 1) {
+        throw new Error('CleanCsvData: Data Error');
+    }
     // Handle the 4th row (header row)
     if (state.rowCount === 1) {
-        // console.log(Object.keys(row));
         const cleanedHeaders = Object.keys(row);
 
         // // Store cleaned headers in state
