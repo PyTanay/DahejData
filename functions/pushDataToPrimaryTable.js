@@ -25,7 +25,7 @@ async function pushDataToPrimaryTable(dbConnection, data) {
                 const request = new Request(transaction);
 
                 let bulkInsertQuery = `
-                    INSERT INTO hourlyData (TagKey, DateTime, Value, Processed)
+                    INSERT INTO hourlyData (TagKey, DateTimeID, Value)
                     VALUES `;
 
                 const values = [];
@@ -52,9 +52,8 @@ async function pushDataToPrimaryTable(dbConnection, data) {
 
                     values.push(`(
                         '${await sharedResource.getValue(SrNo + TagName + Description)}',
-                        '${DateTime}',
-                        ${Value},
-                        0
+                        '${await sharedResource.getDateTimeID(DateTime)}',
+                        ${Value}
                     )`);
                 }
 

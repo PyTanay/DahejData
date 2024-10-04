@@ -5,7 +5,9 @@ class SharedResource {
     constructor() {
         this.mutex = new Mutex();
         this.logMutex = new Mutex();
+        this.datTimeMutex = new Mutex();
         this.data = {}; // Shared resource as an object
+        this.dateTime = {};
     }
     async logError(message) {
         this.logMutex
@@ -41,6 +43,23 @@ class SharedResource {
         try {
             // Return the entire object
             return { ...this.data }; // Return a shallow copy
+        } finally {
+            release();
+        }
+    }
+    async getDateTimeID(dateTime) {
+        const release = await this.datTimeMutex.acquire();
+        try {
+            // console.log(this.dateTime[dateTime]);
+            return this.dateTime[dateTime];
+        } finally {
+            release();
+        }
+    }
+    async setDateTimeData(data) {
+        const release = await this.datTimeMutex.acquire();
+        try {
+            this.dateTime = data;
         } finally {
             release();
         }
