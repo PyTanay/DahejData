@@ -7,6 +7,7 @@ CREATE TABLE dateTime (
     DateTime DATETIME NOT NULL,
     UNIQUE KEY (DateTime)
 ) AUTO_INCREMENT = 0;
+ALTER TABLE dateTime AUTO_INCREMENT = 0;
 
 -- 2. Create TagDetails Table
 CREATE TABLE TagDetails (
@@ -35,18 +36,65 @@ CREATE TABLE FileTracking (
     ProcessedDate TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (FileName)
 );
-ALTER TABLE dateTime
+-- Add foreign key for DateTimeID in hourlyData
+ALTER TABLE hourlyData
 ADD CONSTRAINT FK_hourlyData_DateTimeID
 FOREIGN KEY (DateTimeID)
-REFERENCES hourlyData(DateTimeID)
+REFERENCES dateTime(DateTimeID)
 ON DELETE CASCADE;
 
-ALTER TABLE hourlyData ADD INDEX (TagKey);
-
-
-ALTER TABLE TagDetails
+-- Add foreign key for TagKey in hourlyData
+ALTER TABLE hourlyData
 ADD CONSTRAINT FK_hourlyData_TagKey
 FOREIGN KEY (TagKey)
-REFERENCES hourlyData(TagKey)
+REFERENCES TagDetails(TagKey)
 ON DELETE CASCADE;
 
+
+DELIMITER $$
+
+CREATE PROCEDURE PopulateDateTime()
+BEGIN
+    DECLARE curDateTime DATETIME DEFAULT '2010-01-01 00:00:00';
+    DECLARE endDateTime DATETIME DEFAULT '2040-12-31 00:00:00';
+
+    WHILE curDateTime <= endDateTime DO
+        INSERT INTO dateTime (DateTime) VALUES (curDateTime);
+        SET curDateTime = DATE_ADD(curDateTime, INTERVAL 1 HOUR);
+    END WHILE;
+END$$
+
+DELIMITER ;
+
+
+CALL PopulateDateTime();
+
+-- Drop foreign key from dateTime table (if exists)
+select count(*) as count from hourlyData;
+SET SQL_SAFE_UPDATES = 0;
+SELECT * FROM dateTime where DateTime='2020-10-29T23:30:00.000Z';
+
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE dateTime;  -- or DELETE FROM dateTime;
+SET FOREIGN_KEY_CHECKS = 1;
+
+
+SHOW PROCESSLIST;
+KILL 20;
+
+DELETE from hourlyData;
+DELETE FROM FileTracking;
+DELETE FROM TagDetails;
+
+SET GLOBAL wait_timeout = 28800;  -- 8 hours
+SET GLOBAL interactive_timeout = 28800;  -- 8 hours
+
+SELECT 
+    table_schema AS 'Database',
+    SUM(data_length + index_length) / 1024 / 1024 AS 'Size (MB)'
+FROM 
+    information_schema.TABLES
+WHERE 
+    table_schema = 'Dahej_data'
+GROUP BY 
+    table_schema;

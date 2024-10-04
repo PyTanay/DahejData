@@ -17,8 +17,8 @@ async function insertDateTimes() {
         const insertSQL = 'INSERT INTO dateTime (DateTime) VALUES ?';
 
         // Generate datetime array from 1/1/10 to 31/12/40
-        const startDate = new Date('2010-01-01T00:30:00Z');
-        const endDate = new Date('2040-12-31T23:30:00Z');
+        const startDate = new Date('2010-01-01T00:00:00Z');
+        const endDate = new Date('2040-12-31T23:00:00Z');
 
         const dateTimes = [];
         let currentDate = new Date(startDate);

@@ -1,46 +1,42 @@
-import pkg from 'mssql';
-const { Request, NVarChar } = pkg;
-import { appendFile } from 'fs';
-import pushDataToSecondaryTable from './pushDataToSecondaryTable.js';
+import mysql from 'mysql2/promise';
 import sharedResource from './sharedResource.js';
 
 /**
  * Inserts an entry into the FileTracking table to track processed files.
- * @param {sql.ConnectionPool} dbConnection - The database connection object.
+ * @param {mysql.PoolConnection} dbConnection - The database connection object.
  * @param {string} fileName - The name of the file that was processed.
  * @returns {Promise<void>}
  */
 async function pushDataToFileTracking(dbConnection, fileName) {
     try {
-        const request = new Request(dbConnection);
+        // Use a single query to insert or update the file tracking entry
+        const insertQuery = `
+            INSERT INTO FileTracking (FileName, Processed) 
+            VALUES (?, 0) 
+            ON DUPLICATE KEY UPDATE 
+            Processed = VALUES(Processed);
+        `;
 
-        // Assuming your FileTracking table has columns for FileName and DateProcessed
-        const query = `IF EXISTS (SELECT 1 FROM FileTracking WHERE FileName = @fileName)
-                            SELECT Processed FROM FileTracking WHERE FileName = @fileName;
-                        ELSE
-                        BEGIN
-                            INSERT INTO FileTracking (FileName) VALUES (@fileName);
-                            SELECT 0 AS Processed; -- Assuming default value for 'Processed' is 0 on insertion
-                        END`;
+        // Execute the insert or update operation
+        await dbConnection.query(insertQuery, [fileName]);
 
-        // Set up the input parameter for the file name
-        request.input('fileName', NVarChar, fileName);
+        // Now retrieve the processed status
+        const [rows] = await dbConnection.query('SELECT Processed FROM FileTracking WHERE FileName = ?;', [fileName]);
 
-        // Execute the query
-        const status = await request.query(query);
-        // console.log(typeof status.recordset[0].Processed);
-        if (status.recordset[0].Processed === true) {
-            // console.log(`File ${fileName} Status Log: Already Inserted.`, status.recordset[0]);
-            throw new Error('exists');
+        // Handle the processed status as needed
+        const processedStatus = rows[0] ? rows[0].Processed : null;
+        if (processedStatus === 1) {
+            throw new Error('exists'); // If processed is 1, file already processed
         }
         // console.log(`File tracking entry added for ${fileName}`);
     } catch (error) {
         if (error.message === 'exists') {
+            // Handle the case where the file has already been processed
             // sharedResource.logError(`FileTracking: File already inserted: ${fileName}`);
             throw error;
         } else {
-            // console.log('Error while pushing data to FileTracking.');
-            console.log('FileTracking:', fileName, error);
+            // Log the error
+            console.log('Error while pushing data to FileTracking:', fileName, error);
             throw error;
         }
     }

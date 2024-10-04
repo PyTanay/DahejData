@@ -50,7 +50,6 @@ class SharedResource {
     async getDateTimeID(dateTime) {
         const release = await this.datTimeMutex.acquire();
         try {
-            // console.log(this.dateTime[dateTime]);
             return this.dateTime[dateTime];
         } finally {
             release();

@@ -1,92 +1,77 @@
-import pkg from 'mssql';
+import mysql from 'mysql2/promise';
 import sharedResource from './sharedResource.js';
-
-const { Request, Transaction, NVarChar, DateTime: _DateTime, Decimal } = pkg;
 
 /**
  * Inserts data into the hourlyData table.
  *
- * @param {sql.ConnectionPool} dbConnection - The database connection object.
- * @param {string} tagKey - The TagKey associated with the tag details.
+ * @param {mysql.Pool} dbConnection - The database connection pool.
  * @param {Object[]} data - The data to be inserted, each object containing DateTime and Value.
  * @returns {Promise<void>}
  */
 async function pushDataToPrimaryTable(dbConnection, data) {
     const batchSize = Number(process.env.BATCHSIZE) || 2000;
+
     try {
         // Split data into batches
         for (let i = 0; i < data.length; i += batchSize) {
             const batch = data.slice(i, i + batchSize); // Get the current batch
 
-            let transaction;
+            const connection = await dbConnection.getConnection();
             try {
-                transaction = new Transaction(dbConnection);
-                await transaction.begin();
-                const request = new Request(transaction);
-
-                let bulkInsertQuery = `
-                    INSERT INTO hourlyData (TagKey, DateTimeID, Value)
-                    VALUES `;
+                await connection.beginTransaction(); // Start transaction
 
                 const values = [];
+                const placeholders = [];
 
-                // console.log(tagKey);
-                // fs.writeFile(`./log${i}.json`, JSON.stringify(tagKey), (err) => {
-                //     if (err) throw err;
-                //     console.log('File was saved!');
-                // });
                 for (const entry of batch) {
                     const { DateTime, Value, TagName, SrNo, Description } = entry;
 
-                    if ((await sharedResource.getValue(SrNo + TagName + Description)) == null) {
+                    // Fetch the TagKey from sharedResource
+                    const tagKey = await sharedResource.getValue(SrNo + TagName + Description);
+                    if (tagKey == null) {
                         console.log(await sharedResource.getAll());
-                        console.log(
-                            await sharedResource.getValue(SrNo + TagName + Description),
-                            SrNo + TagName + Description,
-                            SrNo,
-                            TagName,
-                            Description
-                        );
-                        throw Error('TagKey is null');
+                        console.log(tagKey, SrNo + TagName + Description, SrNo, TagName, Description);
+                        throw new Error('TagKey is null');
                     }
 
-                    values.push(`(
-                        '${await sharedResource.getValue(SrNo + TagName + Description)}',
-                        '${await sharedResource.getDateTimeID(DateTime)}',
-                        ${Value}
-                    )`);
+                    const dateTimeID = await sharedResource.getDateTimeID(new Date(DateTime).toISOString());
+                    if (!dateTimeID) {
+                        console.log(`DateTimeID is null for DateTime: ${DateTime} `);
+                        throw new Error('DateTimeID is null');
+                    }
+
+                    // Prepare the values for insertion
+                    values.push([tagKey, dateTimeID, Value]);
+                    placeholders.push('(?, ?, ?)'); // Each row has 3 placeholders
                 }
 
-                // Join all values to form a single bulk insert query for the current batch
-                bulkInsertQuery += values.join(', ');
+                // Create the bulk insert query
+                const bulkInsertQuery = `
+                    INSERT INTO hourlyData (TagKey, DateTimeID, Value)
+                    VALUES ${placeholders.join(', ')}`;
 
-                // Execute the bulk insert for the batch
-                await request.query(bulkInsertQuery);
+                // Execute the bulk insert
+                await connection.query(bulkInsertQuery, values.flat());
 
-                // Commit the transaction for the batch
-                await transaction.commit();
+                await connection.commit(); // Commit the transaction
             } catch (err) {
-                if (transaction) {
-                    await transaction.rollback(); // Ensure rollback on error
+                await connection.rollback(); // Rollback on error
+                if (err.code === 'ER_DUP_ENTRY') {
+                    throw new Error('primary:duplicate'); // Handle duplicate entry error
                 }
-                if (err.number === 10738) {
-                    console.log('More than 1000 rows');
-                    throw err;
-                } else if (err.number === 2627) {
-                    throw new Error('primary:duplicate');
-                } else {
-                    console.log(`Error in batch primary table data push. Batch: ${i}`);
-                    throw err;
-                }
+                console.log(`Error in batch primary table data push. Batch: ${i}`, err);
+                throw err; // Rethrow other errors
+            } finally {
+                connection.release(); // Release the connection back to the pool
             }
         }
     } catch (err1) {
         if (err1.message === 'primary:duplicate') {
             sharedResource.logError(`primaryPush : Duplicate entry`);
-            throw err1;
+            throw err1; // Rethrow duplicate entry error
         } else {
             console.log('Error in primary Table', err1);
-            throw err1;
+            throw err1; // Rethrow other errors
         }
     }
 }

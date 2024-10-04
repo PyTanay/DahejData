@@ -108,7 +108,6 @@ async function processCsvFile(filePath, dbConnection) {
                 }
             })
             .on('error', (error) => {
-                console.log('Tanayyyyy');
                 if (error.message === 'CleanCsvData: Data Error') {
                     resolve(`Processed ${filePath} with error!`);
                 } else {
@@ -127,7 +126,7 @@ async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     let files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = 200 || files.length,
+    let total = files.length,
         current = 0;
     total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
     files = files.slice(current, total);
@@ -156,7 +155,7 @@ async function processMultipleCsvFiles(directoryPath) {
                     errorOccurred = true; // Set flag if an error occurs
                     console.log(err4.message, 'From final');
                 }
-                // b1.stop();
+                b1.stop();
             }
             if (current === total) b1.stop();
             return 'Done';
@@ -177,7 +176,7 @@ async function processMultipleCsvFiles(directoryPath) {
     } catch (error) {
         console.error(error.message, error);
     } finally {
-        await dbConnection.close();
+        await dbConnection.end();
     }
 }
 

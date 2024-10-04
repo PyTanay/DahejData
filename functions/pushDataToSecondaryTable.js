@@ -1,7 +1,4 @@
-import pkg from 'mssql';
-// import { v4 as uuidv4 } from 'uuid';
-const { Request, NVarChar, Float } = pkg;
-// import { appendFile } from 'fs';
+import mysql from 'mysql2/promise';
 import sharedResource from './sharedResource.js';
 import pushDataToPrimaryTable from './pushDataToPrimaryTable.js';
 import fileProcessed from './fileProcessed.js';
@@ -11,11 +8,12 @@ import fileProcessed from './fileProcessed.js';
  * If an entry with the same Tag Name, Description, Engg Units, and Alarm Value exists, it returns the existing TagKey.
  * Otherwise, it inserts a new entry and returns the newly generated TagKey.
  *
- * @param {sql.ConnectionPool} dbConnection - The database connection object.
+ * @param {mysql.PoolConnection} dbConnection - The database connection object.
  * @param {Array} tagDetails - The array of tag details to be inserted or checked.
  * @param {string} sectionName - The section name extracted from the filename.
- * @param {number} maxRetries - The maximum number of retries for handling errors like 2627.
- * @returns {Promise<Array<string>>} - The list of TagKeys of the inserted or existing entries.
+ * @param {Array} transposedData - The transposed data to be inserted into the primary table.
+ * @param {string} filename - The name of the file being processed.
+ * @returns {Promise<boolean>} - Returns true if processing is successful.
  */
 async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, transposedData, filename) {
     try {
@@ -29,47 +27,37 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
                 continue;
             }
 
-            // const uniqID = uuidv4();
             let maxRetries = 3;
             let retryCount = 0;
             let success = false;
 
             while (!success && retryCount < maxRetries) {
                 try {
-                    const request = new Request(dbConnection);
+                    const request = dbConnection;
 
-                    // Use the MERGE statement to insert or return existing TagKey
-                    const mergeQuery = `DECLARE @TagKey INT;
+                    // Use INSERT ... ON DUPLICATE KEY UPDATE to insert or return existing TagKey
+                    const mergeQuery = `
+                        INSERT INTO TagDetails (SrNo,TagName, Description, EnggUnits, AlarmValue, SectionName)
+                        VALUES (?,?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                        TagKey = LAST_INSERT_ID(TagKey);`; // This allows us to get the existing TagKey
 
-    -- Check for existing TagKey
-    SELECT @TagKey = TagKey
-    FROM TagDetails
-    WHERE TagName = @tagName AND Description = @description;
+                    const params = [
+                        tagDetails[i]['Sr No'],
+                        tagDetails[i]['Tag Name'],
+                        tagDetails[i].Description,
+                        tagDetails[i]['Engg Units'],
+                        Number(tagDetails[i]['Alarm\nValue']),
+                        sectionName,
+                    ];
 
-    -- If no TagKey found, insert new record
-    IF @TagKey IS NULL
-    BEGIN
-        INSERT INTO TagDetails (TagName, Description, EnggUnits, AlarmValue, SectionName)
-        VALUES (@tagName, @description, @enggUnits, @alarmValue, @sectionName);
+                    // Execute the query
+                    const [result] = await request.query(mergeQuery, params);
 
-        -- Get the TagKey of the newly inserted record
-        SET @TagKey = SCOPE_IDENTITY();
-    END;
-
-    -- Return the TagKey
-    SELECT @TagKey AS TagKey;`;
-
-                    // request.input('tagKey', NVarChar(36), uniqID);
-                    request.input('tagName', NVarChar, tagDetails[i]['Tag Name']);
-                    request.input('description', NVarChar, tagDetails[i].Description);
-                    request.input('enggUnits', NVarChar, tagDetails[i]['Engg Units']);
-                    request.input('alarmValue', Float, Number(tagDetails[i]['Alarm\nValue']));
-                    request.input('sectionName', NVarChar, sectionName);
-
-                    const result = await request.query(mergeQuery);
+                    // Get the TagKey
+                    const tagKey = result.insertId || result[0].TagKey; // Use insertId for new entry or existing TagKey
 
                     // Store the TagKey in the sharedResource
-                    const tagKey = result.recordset[0].TagKey;
                     await sharedResource.addKeyValue(uniqueKey, tagKey);
 
                     if (!tagKey) {
@@ -78,17 +66,16 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
 
                     success = true; // If the code reaches here, the operation was successful
                 } catch (err) {
-                    if (err.number !== 2627) {
+                    if (err.code !== 'ER_DUP_ENTRY') {
+                        // Adjusted error check for MySQL
                         retryCount++;
                         const logData = JSON.stringify(tagDetails[i]);
-                        // console.log(`Error 2627 encountered. Retrying ${retryCount}/${maxRetries}...`);
                         sharedResource.logError(`Max retries reached for ${tagDetails[i]},${filename},${logData}`);
                         if (retryCount >= maxRetries) {
-                            // console.log(`Max retries reached for ${tagDetails[i]['Tag Name']}`);
                             throw err; // If max retries are reached, throw the error
                         }
                     } else {
-                        // If it's not a 2627 error, throw it immediately
+                        // If it's a duplicate entry error, throw it immediately
                         console.log('Error while pushing data to secondary table after 3 retries!', err);
                         throw err;
                     }
