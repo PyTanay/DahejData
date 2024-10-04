@@ -27,7 +27,6 @@ dotenv.config();
 // Main function to read and process the CSV file
 async function processCsvFile(filePath, dbConnection) {
     const filename = basename(filePath);
-    await getDateTimeData(dbConnection);
     // Extract date and section name from the filename
     const { sectionName, date: baseDate } = extractInfoFromFilename(filename);
 
@@ -128,12 +127,13 @@ async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     let files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = 2 || files.length,
+    let total = 200 || files.length,
         current = 0;
     total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
     files = files.slice(current, total);
     // Connect to the database
     const dbConnection = await connectToDatabase();
+    await getDateTimeData(dbConnection);
 
     // Map over the files and process each one concurrently
     let errorOccurred = false; // Flag to track if an error has occurred
