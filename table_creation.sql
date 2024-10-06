@@ -51,23 +51,6 @@ REFERENCES TagDetails(TagKey)
 ON DELETE CASCADE;
 
 
-DELIMITER $$
-
-CREATE PROCEDURE PopulateDateTime()
-BEGIN
-    DECLARE curDateTime DATETIME DEFAULT '2010-01-01 00:00:00';
-    DECLARE endDateTime DATETIME DEFAULT '2040-12-31 00:00:00';
-
-    WHILE curDateTime <= endDateTime DO
-        INSERT INTO dateTime (DateTime) VALUES (curDateTime);
-        SET curDateTime = DATE_ADD(curDateTime, INTERVAL 1 HOUR);
-    END WHILE;
-END$$
-
-DELIMITER ;
-
-
-CALL PopulateDateTime();
 
 -- Drop foreign key from dateTime table (if exists)
 select count(*) as count from hourlyData;

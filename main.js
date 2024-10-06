@@ -132,7 +132,7 @@ async function processMultipleCsvFiles(directoryPath) {
     files = files.slice(current, total);
     // Connect to the database
     const dbConnection = await connectToDatabase();
-    await getDateTimeData(dbConnection);
+    // await getDateTimeData(dbConnection);
 
     // Map over the files and process each one concurrently
     let errorOccurred = false; // Flag to track if an error has occurred

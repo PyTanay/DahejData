@@ -34,20 +34,20 @@ async function pushDataToPrimaryTable(dbConnection, data) {
                         throw new Error('TagKey is null');
                     }
 
-                    const dateTimeID = await sharedResource.getDateTimeID(new Date(DateTime).toISOString());
-                    if (!dateTimeID) {
-                        console.log(`DateTimeID is null for DateTime: ${DateTime} `);
-                        throw new Error('DateTimeID is null');
-                    }
+                    // const dateTimeID = await sharedResource.getDateTimeID(new Date(DateTime).toISOString());
+                    // if (!dateTimeID) {
+                    //     console.log(`DateTimeID is null for DateTime: ${DateTime} `);
+                    //     throw new Error('DateTimeID is null');
+                    // }
 
                     // Prepare the values for insertion
-                    values.push([tagKey, dateTimeID, Value]);
+                    values.push([tagKey, DateTime.replace('T', ' ').replace('Z', '').substring(0, 19), Value]);
                     placeholders.push('(?, ?, ?)'); // Each row has 3 placeholders
                 }
 
                 // Create the bulk insert query
                 const bulkInsertQuery = `
-                    INSERT INTO hourlyData (TagKey, DateTimeID, Value)
+                    INSERT INTO hourlyData (TagKey, DateTime, Value)
                     VALUES ${placeholders.join(', ')}`;
 
                 // Execute the bulk insert
