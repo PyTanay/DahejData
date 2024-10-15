@@ -1,0 +1,14 @@
+import "csv"
+
+csv.from(csv: "#group,false,false,true,false,true,true,true
+#datatype,string,long,dateTime:RFC3339,double,string,string,string
+#default,,,,,tagname,dhjdata,
+,,table,_time,_value,_field,_measurement,_tag
+,,,2024-10-10T18:30:00Z,878.57,,,0")
+|>to(bucket: "Dahej_data")
+
+
+#group,false,false,true,false,false,true,true
+#datatype,string,long,dateTime:RFC3339,double,string,string,string
+#default,,,,,tagname,dhjdata,
+,,table,_time,_value,_field,_measurement,_tag

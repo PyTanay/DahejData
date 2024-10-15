@@ -131,9 +131,10 @@ async function processMultipleCsvFiles(directoryPath) {
     total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
     files = files.slice(current, total);
     // Connect to the database
-    const dbConnection = await connectToDatabase();
-    // await getDateTimeData(dbConnection);
 
+    const dbConnection = await connectToDatabase();
+    await sharedResource.writeHeaders();
+    // await getDateTimeData(dbConnection);
     // Map over the files and process each one concurrently
     let errorOccurred = false; // Flag to track if an error has occurred
     const processingPromises = files.map((file) => {

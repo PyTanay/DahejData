@@ -18,7 +18,7 @@ import fileProcessed from './fileProcessed.js';
 async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, transposedData, filename) {
     try {
         for (let i = 1; i < tagDetails.length; i++) {
-            const uniqueKey = tagDetails[i]['Sr No'] + tagDetails[i]['Tag Name'] + tagDetails[i].Description;
+            const uniqueKey = tagDetails[i]['Tag Name'] + tagDetails[i].Description;
 
             // Check if the key already exists in sharedResource
             const existingTagKey = await sharedResource.getValue(uniqueKey);
@@ -53,7 +53,6 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
 
                     // Execute the query
                     const [result] = await request.query(mergeQuery, params);
-
                     // Get the TagKey
                     const tagKey = result.insertId || result[0].TagKey; // Use insertId for new entry or existing TagKey
 
@@ -89,7 +88,7 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
 
     // Proceed with primary table and file processing
     try {
-        await pushDataToPrimaryTable(dbConnection, transposedData, filename);
+        await pushDataToPrimaryTable(transposedData, filename);
         await fileProcessed(dbConnection, filename);
     } catch (err5) {
         if (err5.message === 'primary:duplicate') {

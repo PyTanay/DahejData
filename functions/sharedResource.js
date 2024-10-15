@@ -5,9 +5,31 @@ class SharedResource {
     constructor() {
         this.mutex = new Mutex();
         this.logMutex = new Mutex();
+        this.writeMutex = new Mutex();
         // this.datTimeMutex = new Mutex();
         this.data = {}; // Shared resource as an object
         // this.dateTime = {};
+    }
+    async writeData(batch) {
+        this.writeMutex
+            .runExclusive(() => {
+                fs.appendFileSync('cleanData.csv', batch.join('\n') + `\n`);
+            })
+            .catch((err) => console.error(err));
+    }
+    async writeHeaders() {
+        this.writeMutex
+            .runExclusive(() => {
+                fs.appendFileSync(
+                    'cleanData.csv',
+                    `#group,false,false,false,false,true,true
+#datatype,string,long,dateTime:RFC3339,double,string,string
+#default,_result,,,,,hourlyData
+,result,table,_time,_value,_field,_measurement
+`
+                );
+            })
+            .catch((err) => console.error(err));
     }
     async logError(message) {
         this.logMutex
