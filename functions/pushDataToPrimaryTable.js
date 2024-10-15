@@ -32,7 +32,7 @@ async function pushDataToPrimaryTable(data) {
                     const tagKey = await sharedResource.getValue(TagName + Description);
                     if (tagKey == null) {
                         console.log(await sharedResource.getAll());
-                        console.log(tagKey, SrNo + TagName + Description, TagName, Description);
+                        console.log(tagKey, TagName + Description, TagName, Description);
                         throw new Error('TagKey is null');
                     }
 

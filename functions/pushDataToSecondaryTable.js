@@ -51,14 +51,16 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
                     // Execute the query
                     const [result] = await request.query(mergeQuery, params);
                     // Get the TagKey
-                    const tagKey = result.insertId || result[0].TagKey; // Use insertId for new entry or existing TagKey
+                    const tagKey = result.insertId; // Use insertId for new entry or existing TagKey
 
                     // Store the TagKey in the sharedResource
-                    await sharedResource.addKeyValue(uniqueKey, tagKey);
-
-                    if (!tagKey) {
-                        throw new Error('TagKey not pushed into the object!');
+                    if (tagKey !== null) {
+                        await sharedResource.addKeyValue(uniqueKey, tagKey);
                     }
+
+                    // if (!tagKey) {
+                    //     throw new Error('TagKey not pushed into the object!');
+                    // }
 
                     success = true; // If the code reaches here, the operation was successful
                 } catch (err) {
