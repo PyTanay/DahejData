@@ -37,13 +37,10 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
 
                     // Use INSERT ... ON DUPLICATE KEY UPDATE to insert or return existing TagKey
                     const mergeQuery = `
-                        INSERT INTO TagDetails (SrNo,TagName, Description, EnggUnits, AlarmValue, SectionName)
-                        VALUES (?,?, ?, ?, ?, ?)
-                        ON DUPLICATE KEY UPDATE
-                        TagKey = LAST_INSERT_ID(TagKey);`; // This allows us to get the existing TagKey
+                        INSERT IGNORE INTO TagDetails (TagName, Description, EnggUnits, AlarmValue, SectionName)
+                        VALUES (?, ?, ?, ?, ?);`; // This allows us to get the existing TagKey
 
                     const params = [
-                        tagDetails[i]['Sr No'],
                         tagDetails[i]['Tag Name'],
                         tagDetails[i].Description,
                         tagDetails[i]['Engg Units'],
