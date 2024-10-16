@@ -18,7 +18,7 @@ import fileProcessed from './fileProcessed.js';
 async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, transposedData, filename) {
     try {
         for (let i = 1; i < tagDetails.length; i++) {
-            const uniqueKey = tagDetails[i]['Tag Name'] + tagDetails[i].Description;
+            const uniqueKey = tagDetails[i]['Tag Name'] + tagDetails[i].Description.toLowerCase();
 
             // Check if the key already exists in sharedResource
             const existingTagKey = await sharedResource.getValue(uniqueKey);
@@ -54,7 +54,7 @@ async function pushDataToSecondaryTable(dbConnection, tagDetails, sectionName, t
                     const tagKey = result.insertId; // Use insertId for new entry or existing TagKey
 
                     // Store the TagKey in the sharedResource
-                    if (tagKey !== null) {
+                    if (tagKey !== null && tagKey !== 0) {
                         await sharedResource.addKeyValue(uniqueKey, tagKey);
                     }
 

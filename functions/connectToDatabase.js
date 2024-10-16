@@ -9,7 +9,7 @@ async function connectToDatabase() {
         host: process.env.DATABASE_SERVER, // or your server address
         user: process.env.DATABASE_USER, // replace with your MySQL username
         password: process.env.DATABASE_PASSWORD, // replace with your MySQL password
-        database: 'Dahej_data', // replace with your database name
+        database: process.env.DATABASE_NAME, // replace with your database name
         waitForConnections: true,
         connectionLimit: Number(process.env.DATABASE_POOL_MAX) || 5, // Max concurrent connections
         queueLimit: 0, // No limit on queueing connections

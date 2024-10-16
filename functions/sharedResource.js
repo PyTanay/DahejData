@@ -6,9 +6,7 @@ class SharedResource {
         this.mutex = new Mutex();
         this.logMutex = new Mutex();
         this.writeMutex = new Mutex();
-        // this.datTimeMutex = new Mutex();
         this.data = {}; // Shared resource as an object
-        // this.dateTime = {};
     }
     async writeData(batch) {
         this.writeMutex
@@ -19,15 +17,22 @@ class SharedResource {
     }
     async writeHeaders() {
         this.writeMutex
-            .runExclusive(() => {
-                fs.appendFileSync(
-                    'cleanData.csv',
-                    `#group,false,false,false,false,true,true
+            .runExclusive(async () => {
+                const readFile = fs.readFileSync('cleanData.csv', (err) => {
+                    if (err) {
+                        throw err;
+                    }
+                });
+                if (readFile.length === 0) {
+                    fs.appendFileSync(
+                        'cleanData.csv',
+                        `#group,false,false,false,false,true,true
 #datatype,string,long,dateTime:RFC3339,double,string,string
 #default,_result,,,,,hourlyData
 ,result,table,_time,_value,_field,_measurement
 `
-                );
+                    );
+                }
             })
             .catch((err) => console.error(err));
     }
@@ -69,22 +74,22 @@ class SharedResource {
             release();
         }
     }
-    // async getDateTimeID(dateTime) {
-    //     const release = await this.datTimeMutex.acquire();
-    //     try {
-    //         return this.dateTime[dateTime];
-    //     } finally {
-    //         release();
-    //     }
-    // }
-    // async setDateTimeData(data) {
-    //     const release = await this.datTimeMutex.acquire();
-    //     try {
-    //         this.dateTime = data;
-    //     } finally {
-    //         release();
-    //     }
-    // }
+    async getTagKey(tagNameDescription) {
+        const release = await this.mutex.acquire();
+        try {
+            return this.data[tagNameDescription];
+        } finally {
+            release();
+        }
+    }
+    async setTagKeyData(data) {
+        const release = await this.mutex.acquire();
+        try {
+            this.data = data;
+        } finally {
+            release();
+        }
+    }
 }
 
 const sharedResource = new SharedResource();

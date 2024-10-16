@@ -6,24 +6,24 @@ import sharedResource from './sharedResource.js';
  * @param {mysql.Pool} dbConnection - The database connection pool.
  * @returns {Promise<void>}
  */
-async function getDateTimeData(dbConnection) {
+async function getTagListData(dbConnection) {
     try {
-        const dateTimeQuery = `SELECT * FROM dateTime`;
+        const dateTimeQuery = `SELECT TagKey,TagName,Description FROM tagdetails`;
 
         // Execute the query
         const [rows] = await dbConnection.execute(dateTimeQuery);
 
-        const dateTimeData = {};
+        const tagList = {};
 
         // Map the results into the dateTimeData object
         await Promise.all(
             rows.map(async (record) => {
-                dateTimeData[new Date(record['DateTime']).toISOString()] = record['DateTimeID'];
+                tagList[record['TagName'] + record['Description'].toLowerCase()] = record['TagKey'];
             })
         );
 
         // Store the dateTimeData in sharedResource
-        await sharedResource.setDateTimeData(dateTimeData);
+        await sharedResource.setTagKeyData(tagList);
 
         // Uncomment the line below if you want to throw an error to stop execution
         // throw new Error('Error to stop execution!!');
@@ -33,4 +33,4 @@ async function getDateTimeData(dbConnection) {
     }
 }
 
-export default getDateTimeData;
+export default getTagListData;

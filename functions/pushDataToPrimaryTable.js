@@ -27,12 +27,11 @@ async function pushDataToPrimaryTable(data) {
 
                 for (const entry of batch) {
                     const { DateTime, Value, TagName, Description } = entry;
-
                     // Fetch the TagKey from sharedResource
-                    const tagKey = await sharedResource.getValue(TagName + Description);
+                    const tagKey = await sharedResource.getValue(TagName + Description.toLowerCase());
                     if (tagKey == null) {
                         console.log(await sharedResource.getAll());
-                        console.log(tagKey, TagName + Description, TagName, Description);
+                        console.log(tagKey, TagName + Description);
                         throw new Error('TagKey is null');
                     }
 

@@ -1,4 +1,6 @@
 import sharedResource from './sharedResource.js';
+import getTagListData from './getTagListData.js';
+import insertedFiles from './insertedFiles.js';
 import cleanCsvData from './cleanCsvData.js';
 import transposeData from './transposeData.js';
 import extractInfoFromFilename from './extractInfo.js';
@@ -13,6 +15,7 @@ import tagNameCorrector from './tagNameCorrector.js';
 const { convertTimeTo24Hour, parseCustomDateTime, convertDateFormat } = pkg1;
 export default {
     sharedResource,
+    getTagListData,
     cleanCsvData,
     transposeData,
     extractInfoFromFilename,
@@ -26,4 +29,5 @@ export default {
     fileProcessed,
     b1,
     tagNameCorrector,
+    insertedFiles,
 };

@@ -9,7 +9,7 @@ const tagNameCorrector = (tagDetails) => {
             var conflictNo = 1;
             for (let i = j + 1; i < descriptionList.length; i++) {
                 if (descriptionList[i] === descriptionList[j]) {
-                    descriptionList[i] = descriptionList[i] + '_' + conflictNo;
+                    descriptionList[i] = descriptionList[i].trim() + '_' + conflictNo;
                     conflictNo++;
                 }
             }

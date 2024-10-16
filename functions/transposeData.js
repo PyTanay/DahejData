@@ -7,7 +7,7 @@
 function transposeData(cleanedData, cleanedHeaders) {
     const transposedData = [];
     cleanedData.forEach((item, index) => {
-        for (let i = 10; i < cleanedHeaders.length; i++) {
+        for (let i = 9; i < cleanedHeaders.length; i++) {
             const key = cleanedHeaders[i];
             const value = item[key];
             if (value !== undefined) {

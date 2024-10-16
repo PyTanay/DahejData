@@ -4,6 +4,8 @@ import { basename, join } from 'path';
 import csvParser from 'csv-parser';
 import dotenv from 'dotenv';
 import pLimit from 'p-limit';
+import insertedFiles from './functions/insertedFiles.js';
+import getTagListData from './functions/getTagListData.js';
 
 const {
     sharedResource,
@@ -52,7 +54,7 @@ async function processCsvFile(filePath, dbConnection) {
 
                             var newDate = new Date(baseDate.getTime());
 
-                            newDate = newDate.getTime() + (index - 9) * 60 * 60 * 1000; // Set the hour to 4 AM
+                            newDate = newDate.getTime() + (index - 8) * 60 * 60 * 1000; // Set the hour to 4 AM
                             newDate = new Date(newDate);
                             // console.log(newDate.toISOString());
                             return newDate.toISOString();
@@ -78,7 +80,6 @@ async function processCsvFile(filePath, dbConnection) {
                     tagNameCorrector(cleanedData);
                     // Transpose the cleaned data
                     const transposedData = transposeData(cleanedData, state.cleanedHeaders);
-
                     // Check if file has been already inserted into the database
                     // Log this file in the FileTracking table
                     await pushDataToFileTracking(dbConnection, filename);
@@ -125,16 +126,25 @@ async function processCsvFile(filePath, dbConnection) {
 async function processMultipleCsvFiles(directoryPath) {
     // Read the directory and filter for CSV files
     let files = readdirSync(directoryPath).filter((file) => file.endsWith('.csv'));
+    files = files.sort((a, b) => {
+        const dateA = extractInfoFromFilename(a).date;
+        const dateB = extractInfoFromFilename(b).date;
+        return dateA - dateB;
+    });
     const limit = pLimit(Number(process.env.PLIMIT_MAX) || 5);
-    let total = files.length,
-        current = 0;
-    total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
-    files = files.slice(current, total);
+
     // Connect to the database
 
     const dbConnection = await connectToDatabase();
     await sharedResource.writeHeaders();
-    // await getDateTimeData(dbConnection);
+    const insertedFileList = await insertedFiles(dbConnection);
+    files = files.filter((elem) => !insertedFileList.includes(elem));
+    await getTagListData(dbConnection);
+    let total = 10 || files.length,
+        current = 0;
+    total !== 0 ? b1.start(total, current) : console.log('Nothing to download.');
+    files = files.slice(current, total);
+
     // Map over the files and process each one concurrently
     let errorOccurred = false; // Flag to track if an error has occurred
     const processingPromises = files.map((file) => {
